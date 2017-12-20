@@ -62,3 +62,13 @@ h1 {
   padding-top: 1.5rem;
   padding-bottom: 1.5rem;
 }
+
+.navbar-custom {
+    background-color:#ff0000 !important;
+    color:#ff0000 !important;
+    border-radius:0;
+}
+
+a {
+  color: black;
+}

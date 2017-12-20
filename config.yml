@@ -1,0 +1,7 @@
+---
+targets:
+  - name: HomeNet
+    range: 192.168.1.0/24
+
+modules:
+  - nmap

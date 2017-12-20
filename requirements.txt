@@ -1,1 +1,5 @@
+celery
 flask
+flask-socketio
+python-libnmap
+redis
