@@ -13,22 +13,20 @@ def index():
     return render_template('index.html')
 
 
-def push_update(body):
-    print(body)
-    socketio.emit('nmap progress', body, broadcast=True)
-
-
-@app.route("/nmaptest")
+@socketio.on("run nmap")
 def nmap():
-    from redbot.modules.nmap import nmap_scan
-    r = nmap_scan.delay('192.168.1.0/24')
-    r.get(on_message=push_update, propagate=False)
-    return '', 291
+    from redbot.modules.nmap import run_scans
+    emit('message', {'class': 'info', 'content': 'Running scan.'})
+    run_scans()
+
+
+def send_msg(message: str, alert: str = 'info') -> None:
+    socketio.emit('message', {'class': alert, 'content': message}, broadcast=True)
 
 
 @app.route('/message')
 def msg():
-    socketio.emit('message', {'class': 'alert-info', 'content': request.args['m']}, broadcast=True)
+    send_msg(request.args['m'])
     return '', 204
 
 
