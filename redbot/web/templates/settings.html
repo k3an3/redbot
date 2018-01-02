@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block body %}
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-sm-3 col-md-2 d-none d-sm-block bg-light sidebar">
+                <ul class="nav nav-pills flex-column">
+                    {% for module in modules %}
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#{{ module }}">{{ module }}<span class="sr-only">(current)</span></a>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+            </nav>
+
+            <main role="main" class="col-sm-9 ml-sm-auto col-md-10 pt-3">
+                <div class="alert" role="alert" id="messages">
+                </div>
+
+                <h1>Settings</h1>
+                {% for module in modules %}
+                <div id="{{ module }}">
+                    <h2>{{ module }}</h2>
+                    </div>
+                </div>
+                {% endfor %}
+            </main>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script src="/static/js/graph.js"></script>
+{% endblock %}

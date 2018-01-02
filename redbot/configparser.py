@@ -1,6 +1,5 @@
 from typing import List
 
-import os
 import yaml
 
 from redbot.models import targets, modules
