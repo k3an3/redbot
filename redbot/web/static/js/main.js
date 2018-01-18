@@ -69,10 +69,6 @@ ws.on('nmap progress', function(data) {
     } else if (data.status == 'RESULTS') {
         data.result.hosts.forEach(graph_host, data.result.target);
     } else if (data.status == 'SUCCESS') {
-        loading.hide();
-        $('#target').html('');
-        $('#forcescan').fadeIn();
-        scanning = false;
     }
 });
 
@@ -138,6 +134,13 @@ function update_scantime(unixtime) {
         $('#lastscan').text(d.toDateString() + " " + d.toTimeString());
     }
 }
+
+ws.on('scan finished', function(a) {
+    loading.hide();
+    $('#target').html('');
+    $('#forcescan').fadeIn();
+    scanning = false;
+});
 
 ws.on('hosts', function(data) {
     console.log(data);

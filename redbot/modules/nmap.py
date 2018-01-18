@@ -53,10 +53,16 @@ def push_update(data):
 
 def run_scans() -> None:
     hosts.clear()
-    r = ResultSet([])
+    # The way I wish it worked:
+    # r = ResultSet([])
+    r = []
     for target in targets:
-        r.add(nmap_scan.delay(target))
-    r.get(on_message=push_update, propagate=False)
+        r.append(nmap_scan.delay(target))
+    # But this blocks indefinitely even after tasks complete for some reason
+    # r.get(on_message=push_update, propagate=False)
+    for scan in r:
+        scan.get(on_message=push_update, propagate=False)
     send_msg('Scan finished.')
+    socketio.emit('scan finished', {}, broadcast=True)
     global last_scan
     last_scan = int(time())
