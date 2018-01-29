@@ -19,6 +19,11 @@ def settings():
     return render_template('settings.html', modules=modules)
 
 
+@app.route('/logs')
+def logs():
+    return render_template('logs.html')
+
+
 @socketio.on('run nmap')
 def nmap():
     from redbot.modules.nmap import run_scans
