@@ -3,6 +3,7 @@ from flask_socketio import SocketIO, emit
 
 from redbot import settings
 from redbot.models import modules
+from redbot.utils import get_log, log
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
@@ -21,11 +22,12 @@ def settings():
 
 @app.route('/logs')
 def logs():
-    return render_template('logs.html')
+    return render_template('logs.html', logs=get_log(20))
 
 
 @socketio.on('run nmap')
 def nmap():
+    log("Nmap scan invoked from web.", "web")
     from redbot.modules.nmap import run_scans
     send_msg("Running scan.")
     run_scans()

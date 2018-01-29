@@ -18,7 +18,19 @@
                 </div>
 
                 <h1>Logs</h1>
-                <textarea id="logs" class="form-control" readonly></textarea>
+                <div id="logs">
+                    {% for l in logs %}
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="unftime">{{ l["time"] }}</span>
+                            </div>
+                            <div class="card-body text-{{ l["style"] }}">
+                                <h5 class="card-title">{{ l["tag"] }}</h5>
+                                {{ l["text"] }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
             </main>
         </div>
     </div>

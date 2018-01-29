@@ -1,5 +1,7 @@
 var ws = io.connect('//' + document.domain + ':' + location.port);
 var messages = $('#messages');
+var logcount = $('#logcount');
+var lastwsstate = true;
 
 messages.hide();
 
@@ -15,12 +17,18 @@ function display_message(data) {
 ws.on('message', display_message);
 
 ws.on('disconnect', function(data) {
+    lastwsstate = false;
     display_message({class: 'danger',
         content: 'WebSocket disconnected.'});
 });
 
 ws.on('connect', function(data) {
-    display_message({class: 'success',
-        content: 'WebSocket connected.'});
+    if (!lastwsstate)
+        display_message({class: 'success',
+            content: 'WebSocket reconnected.'});
+    lastwsstate = true;
 });
 
+ws.on('logs', function(data) {
+    logcount.html(parseInt(logcount.html()) + 1);
+});

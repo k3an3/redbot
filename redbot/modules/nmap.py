@@ -52,7 +52,7 @@ def nmap_scan(self, target: Dict[str, str],
 def push_update(data):
     if data.get('status') == 'RESULTS':
         hosts = {data['result']['target']: data['result']['hosts']}
-        log("Completed nmap scan against " + data['result']['target'])
+        log("Completed nmap scan against " + data['result']['target'], "nmap", "success")
         storage.set('hosts', json.dumps(hosts))
     socketio.emit('nmap progress', data, broadcast=True)
 
