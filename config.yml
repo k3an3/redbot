@@ -1,11 +1,11 @@
 ---
 targets:
   - name: Home0
-    range: 172.24.0.0/24
+    range: 172.26.0.0/26
   - name: Home1
-    range: 172.24.1.0/24
+    range: 172.26.1.0/26
   - name: Home2
-    range: 172.24.2.0/24
+    range: 172.26.2.0/26
 
 modules:
   - nmap

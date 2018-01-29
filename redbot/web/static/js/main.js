@@ -154,7 +154,7 @@ ws.on('hosts', function(data) {
     $.each(data.data, function(target, hosts) {
         hosts.forEach(function(host) {
             graph_host(host, target);
-            table.append('<tr><td>' + target + '</td><td>' + host[0] + '</td><td>' + parse_ports(host[1]) + '</td></tr>');
+            table.append('<tr><td>' + target + '</td><td>' + host[0] + '</td><td>' + parse_ports(host[1]) + '</td><td></td></tr>');
         });
     });
 });

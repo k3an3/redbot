@@ -3,8 +3,11 @@ beautifulsoup4
 PyYAML
 pip
 celery
+eventlet
+faker
 flask
 flask-socketio
+http_crawler
 paramiko
 python-libnmap
 redis

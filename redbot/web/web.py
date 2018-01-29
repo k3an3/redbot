@@ -22,15 +22,16 @@ def settings():
 @socketio.on('run nmap')
 def nmap():
     from redbot.modules.nmap import run_scans
-    emit('message', {'class': 'info', 'content': 'Running scan.'})
+    send_msg("Running scan.")
     run_scans()
 
 
 @socketio.on('get hosts')
-def get_hosts(data):
-    from redbot.modules.nmap import hosts, last_scan
+def get_hosts_ws(data):
+    from redbot.modules.nmap import get_last_scan, get_hosts
+    last_scan = get_last_scan()
     if data['scantime'] < last_scan:
-        emit('hosts', {'data': hosts, 'scantime': last_scan})
+        emit('hosts', {'data': get_hosts(), 'scantime': last_scan})
     else:
         emit('hosts', {'data': None, 'scantime': last_scan})
 
