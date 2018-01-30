@@ -29,14 +29,16 @@ def ssh_brute_force(self, host: str, port: int = 22, users: List[str] = [], pass
 
 def push_update(data):
     if data.get('status') == 'PROGRESS':
-        log('Starting SSH attack on ' + data['result']['target'])
+        log('Starting SSH attack on ' + data['result']['target'], "ssh")
     elif data.get('status') == 'DONE':
         log('Finished SSH attack on {}, username "{}" password "{}"'.format(data['result']['target'],
                                                                             data['result']['username'],
-                                                                            data['result']['password']))
+                                                                            data['result']['password']),
+            "ssh", "success")
 
 
 def run_brute_force(users: List[str], passwords: List[str]):
+    log("Starting SSH attack.", "ssh")
     r = []
     for target in random_targets():
         r.append(ssh_brute_force.delay(target, users=users, passwords=passwords))

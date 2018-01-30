@@ -4,6 +4,7 @@ from faker import Faker
 from http_crawler import crawl
 
 from redbot.async import celery
+from redbot.utils import log, random_targets
 
 settings = {
     'ports': {
@@ -52,15 +53,29 @@ def fill_submit_forms(resp):
             requests.post(url, data=params, cookies=resp.cookies, headers={'User-Agent': fake.user_agent()})
 
 
-@celery.task
-def crawl_site(target: str, submit_forms=True):
+@celery.task(bind=True)
+def crawl_site(self, target: str, submit_forms=True):
     results = crawl(target, follow_external_links=False)
+    self.update_state(state="PROGRESS", meta={'target': target, 'status': 'Completed crawl'})
     if submit_forms:
         for r in results:
             if r.status_code == 200:
                 fill_submit_forms.delay(r.text)
+    self.update_state(state="DONE", meta={'target': target})
 
 
-if __name__ == '__main__':
-    r = requests.get('http://localhost:8000/signup/')
-    fill_submit_forms(r)
+def push_update(data):
+    if data.get('status') == 'PROGRESS':
+        log(data['result']['status'] + " " + data['result']['target'], "http")
+    elif data.get('status') == 'DONE':
+        log('Finished HTTP attack on {}"'.format(data['result']['target']), "http", "success")
+
+
+def run_attack():
+    log("Starting HTTP attack.", "http")
+    r = []
+    for target in random_targets():
+        r.append(crawl_site.delay(target))
+    for status in r:
+        status.get(on_message=push_update, propagate=False)
+    log("Finished HTTP attack.", "http", "success")

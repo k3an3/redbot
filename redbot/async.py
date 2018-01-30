@@ -6,7 +6,6 @@ Manages the setup for task handling.
 """
 import redis
 from celery import Celery
-from rejson import Client
 
 from redbot.configparser import get_modules
 from redbot.models import modules

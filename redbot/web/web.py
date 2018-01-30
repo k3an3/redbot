@@ -22,7 +22,8 @@ def settings():
 
 @app.route('/logs')
 def logs():
-    return render_template('logs.html', logs=get_log(20))
+    count = request.args.get('count', 20)
+    return render_template('logs.html', logs=get_log(count))
 
 
 @socketio.on('run nmap')
@@ -35,10 +36,10 @@ def nmap():
 
 @socketio.on('get hosts')
 def get_hosts_ws(data):
-    from redbot.modules.nmap import get_last_scan, get_hosts
+    from redbot.modules.nmap import get_last_scan, get_targets
     last_scan = get_last_scan()
     if data['scantime'] < last_scan:
-        emit('hosts', {'data': get_hosts(), 'scantime': last_scan})
+        emit('hosts', {'data': get_targets(), 'scantime': last_scan})
     else:
         emit('hosts', {'data': None, 'scantime': last_scan})
 

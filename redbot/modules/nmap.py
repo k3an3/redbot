@@ -27,6 +27,21 @@ def get_hosts() -> Dict:
     return json.loads(storage.get('hosts') or "{}")
 
 
+def get_targets() -> Dict:
+    return json.loads(storage.get('targets') or "{}")
+
+
+def update_hosts(hosts) -> None:
+    current_hosts = get_hosts()
+    current_targets = get_targets()
+    for target in hosts:
+        for host in hosts[target]:
+            current_hosts[host[0]] = {'ports': [_[0] for _ in host[1]], 'target': target}
+    storage.set('hosts', json.dumps(current_hosts))
+    current_targets.update(hosts)
+    storage.set('targets', json.dumps(current_targets))
+
+
 def get_last_scan() -> int:
     return int(storage.get('last_scan') or 0)
 
@@ -52,8 +67,8 @@ def nmap_scan(self, target: Dict[str, str],
 def push_update(data):
     if data.get('status') == 'RESULTS':
         hosts = {data['result']['target']: data['result']['hosts']}
+        update_hosts(hosts)
         log("Completed nmap scan against " + data['result']['target'], "nmap", "success")
-        storage.set('hosts', json.dumps(hosts))
     socketio.emit('nmap progress', data, broadcast=True)
 
 

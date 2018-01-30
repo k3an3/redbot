@@ -4,7 +4,6 @@ from time import time
 from typing import List
 
 from redbot.async import storage
-from redbot.models import targets
 
 
 def log(text: str, tag: str = "General", style: str = "info"):
@@ -18,5 +17,9 @@ def get_log(end: int = -1) -> List[str]:
     return [json.loads(_) for _ in storage.lrange('log', 0, end)]
 
 
-def random_targets():
+def random_targets(req_port: int = 0):
+    from redbot.modules.nmap import get_hosts, targets
+    if req_port:
+        #targets = [h for h in get_hosts() if
+        pass
     return random.sample(targets, random.randint(1, len(targets)))

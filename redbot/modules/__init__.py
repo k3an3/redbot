@@ -21,3 +21,13 @@ def get_all_ports() -> List[int]:
                 p = get_setting('ports', settings)
                 if p:
                     ports += p
+
+
+class Attack:
+    name = None
+    ports = None
+    credentials = None
+
+    @classmethod
+    def run_attack(cls):
+        raise NotImplemented
