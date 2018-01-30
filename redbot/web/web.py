@@ -1,9 +1,11 @@
+import importlib
+
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 
 from redbot import settings
-from redbot.models import modules
-from redbot.utils import get_log, log
+from redbot.core.models import modules
+from redbot.core.utils import get_log, log, get_class
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
@@ -17,7 +19,21 @@ def index():
 
 @app.route('/settings')
 def settings():
-    return render_template('settings.html', modules=modules)
+    module_settings = []
+    for module in modules:
+        try:
+            cls = get_class(module)
+            s = cls.get_settings()
+            for setting in cls.settings:
+                try:
+                    cls.settings[setting].update({'value': s.get(setting)})
+                except (TypeError, ValueError):
+                    pass
+            print(cls.settings)
+            module_settings.append((module, cls.settings))
+        except (AttributeError, ImportError) as e:
+            raise e
+    return render_template('settings.html', modules=module_settings)
 
 
 @app.route('/logs')
@@ -26,12 +42,31 @@ def logs():
     return render_template('logs.html', logs=get_log(count))
 
 
+@socketio.on('settings')
+def settings_ws(data):
+    if data['module'] in modules:
+        print(data)
+        try:
+            cls = get_class(data['module'])
+        except (AttributeError, ImportError):
+            send_msg("Settings for that module cannot be modified.", "warning")
+            return
+        try:
+            cls.set_setting(data['key'], data['value'])
+        except Exception as e:
+            raise e
+            send_msg("There was an error updating settings.", "danger")
+            log(str(e), style="danger")
+        else:
+            send_msg("Settings updated.", "success")
+
+
 @socketio.on('run nmap')
 def nmap():
+    from redbot.modules.nmap import NmapScan
     log("Nmap scan invoked from web.", "web")
-    from redbot.modules.nmap import run_scans
     send_msg("Running scan.")
-    run_scans()
+    NmapScan.run_scans()
 
 
 @socketio.on('get hosts')

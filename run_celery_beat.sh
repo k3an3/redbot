@@ -1,2 +1,2 @@
 #!/bin/sh
-celery -A redbot.async.celery beat
+celery -A redbot.core.async.celery beat

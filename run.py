@@ -5,7 +5,7 @@ import sys
 import logging
 
 from redbot import settings
-from redbot.configparser import parse
+from redbot.core.configparser import parse
 from redbot.web.web import app, socketio
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))

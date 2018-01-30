@@ -9,3 +9,5 @@ targets:
 
 modules:
   - nmap
+  - httpweb
+  - ssh

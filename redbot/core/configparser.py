@@ -2,7 +2,7 @@ from typing import List
 
 import yaml
 
-from redbot.models import targets, modules
+from redbot.core.models import targets, modules
 
 
 def parse(filename: str) -> None:

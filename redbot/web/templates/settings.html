@@ -4,10 +4,10 @@
         <div class="row">
             <nav class="col-sm-3 col-md-2 d-none d-sm-block bg-light sidebar">
                 <ul class="nav nav-pills flex-column">
-                    {% for module in modules %}
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#{{ module }}">{{ module }}<span class="sr-only">(current)</span></a>
-                    </li>
+                    {% for module, _ in modules %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#{{ module }}">{{ module }}<span class="sr-only">(current)</span></a>
+                        </li>
                     {% endfor %}
                 </ul>
 
@@ -18,11 +18,22 @@
                 </div>
 
                 <h1>Settings</h1>
-                {% for module in modules %}
-                <div id="{{ module }}">
-                    <h2>{{ module }}</h2>
+                <h6 class="text-muted">Settings are automatically applied after input field deselection.</h6>
+                {% for module, settings in modules %}
+                    <div id="{{ module }}">
+                        <h2>{{ module }}</h2>
+                        <form>
+                            {% for setting in settings %}
+                                <div class="form-group">
+                                    <label for="{{ module }}-{{ setting }}">{{ settings[setting]["name"] or setting }}</label>
+                                    <input class="form-control" type="text" id="{{ module }}-{{ setting }}" placeholder="{{ settings[setting]["default"] }}" value="{% if settings[setting]["value"] %}{{ settings[setting]["value"] }}{% endif %}">
+                                    {% if settings[setting]["description"] %}
+                                        <small class="form-text text-muted">{{ settings[setting]["description"] }}</small>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </form>
                     </div>
-                </div>
                 {% endfor %}
             </main>
         </div>
@@ -30,5 +41,5 @@
 {% endblock %}
 
 {% block script %}
-    <script src="/static/js/graph.js"></script>
+    <script src="/static/js/settings.js"></script>
 {% endblock %}

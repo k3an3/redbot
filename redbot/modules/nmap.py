@@ -5,22 +5,59 @@ from typing import Dict
 from libnmap.parser import NmapParser, NmapParserException
 from libnmap.process import NmapProcess
 
-from redbot.async import celery, storage
-from redbot.models import targets
-from redbot.modules import get_setting
-from redbot.utils import log
+from redbot.core.async import celery, storage
+from redbot.core.models import targets
+from redbot.modules import Attack
+from redbot.core.utils import log
 from redbot.web.web import socketio, send_msg
 
-settings = {
-    'scan_options': {
-        'name': 'Scan Options',
-        'default': '-sT -n -T5',
-    },
-    'ports': {
-        'name': 'Target Ports',
-        'default': ",".join((str(n) for n in (21, 22, 23, 80, 443)))
+
+class NmapScan(Attack):
+    name = "nmap"
+    exempt = True
+
+    settings = {
+        'scan_options': {
+            'name': 'Scan Options',
+            'default': '-sT -n -T5',
+            'description': 'Accepts any nmap command-line flags'
+        },
+        'ports': {
+            'name': 'Target Ports',
+            'default': ",".join((str(n) for n in (21, 22, 23, 80, 443))),
+            'description': 'Comma-separated TCP ports to scan'
+        },
+        'scan_interval': {
+            'name': 'Scan Interval (seconds)',
+            'default': 60 * 10
+        }
     }
-}
+
+    @classmethod
+    def push_update(cls, data):
+        if data.get('status') == 'RESULTS':
+            hosts = {data['result']['target']: data['result']['hosts']}
+            update_hosts(hosts)
+            log("Completed nmap scan against " + data['result']['target'], "nmap", "success")
+        socketio.emit('nmap progress', data, broadcast=True)
+
+    @classmethod
+    def run_scans(cls) -> None:
+        storage.delete('hosts')
+        # The way I wish it worked:
+        # r = ResultSet([])
+        r = []
+        for target in targets:
+            r.append(nmap_scan.delay(target))
+        # But this blocks indefinitely even after tasks complete for some reason
+        # r.get(on_message=push_update, propagate=False)
+        for scan in r:
+            scan.get(on_message=cls.push_update, propagate=False)
+        send_msg('Scan finished.')
+        socketio.emit('scan finished', {}, broadcast=True)
+        storage.set('last_scan', int(time()))
+
+cls = NmapScan
 
 
 def get_hosts() -> Dict:
@@ -46,9 +83,15 @@ def get_last_scan() -> int:
     return int(storage.get('last_scan') or 0)
 
 
+@celery.task
+def scheduled_scan():
+    if int(time()) - get_last_scan() > NmapScan.get_setting('scan_interval'):
+        NmapScan.run_scans()
+
+
 @celery.task(bind=True)
 def nmap_scan(self, target: Dict[str, str],
-              options: str = get_setting('scan_options', settings)) -> None:
+              options: str = NmapScan.get_setting('scan_options')) -> None:
     nm = NmapProcess(target['range'], options=options)
     nm.run_background()
     while nm.is_running():
@@ -62,27 +105,3 @@ def nmap_scan(self, target: Dict[str, str],
     h = [(host.address, host.get_open_ports()) for host in report.hosts if host.is_up()]
     self.update_state(state="RESULTS", meta={'hosts': h,
                                              'target': target['name']})
-
-
-def push_update(data):
-    if data.get('status') == 'RESULTS':
-        hosts = {data['result']['target']: data['result']['hosts']}
-        update_hosts(hosts)
-        log("Completed nmap scan against " + data['result']['target'], "nmap", "success")
-    socketio.emit('nmap progress', data, broadcast=True)
-
-
-def run_scans() -> None:
-    storage.delete('hosts')
-    # The way I wish it worked:
-    # r = ResultSet([])
-    r = []
-    for target in targets:
-        r.append(nmap_scan.delay(target))
-    # But this blocks indefinitely even after tasks complete for some reason
-    # r.get(on_message=push_update, propagate=False)
-    for scan in r:
-        scan.get(on_message=push_update, propagate=False)
-    send_msg('Scan finished.')
-    socketio.emit('scan finished', {}, broadcast=True)
-    storage.set('last_scan', int(time()))

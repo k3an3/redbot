@@ -3,14 +3,46 @@ from bs4 import BeautifulSoup
 from faker import Faker
 from http_crawler import crawl
 
-from redbot.async import celery
-from redbot.utils import log, random_targets
+from redbot.core.async import celery
+from redbot.core.utils import log, random_targets
+from redbot.modules import Attack
 
 settings = {
     'ports': {
         'default': [80],
     }
 }
+
+
+class HTTPAttacks(Attack):
+    name = "http_attack"
+    settings = {
+        'ports': {
+            'name': 'Ports',
+            'default': '80',
+            'description': 'Comma-separated list of ports to target',
+        }
+    }
+
+    @classmethod
+    def push_update(cls, data):
+        if data.get('status') == 'PROGRESS':
+            cls.log(data['result']['status'] + " " + data['result']['target'])
+        elif data.get('status') == 'DONE':
+            cls.log('Finished HTTP attack on {}"'.format(data['result']['target']), "success")
+
+    @classmethod
+    def run_attack(cls):
+        cls.log("Starting HTTP attack.")
+        r = []
+        for target in random_targets():
+            r.append(crawl_site.delay(target))
+        for status in r:
+            status.get(on_message=cls.push_update, propagate=False)
+        cls.log("Finished HTTP attack.", "success")
+
+
+cls = HTTPAttacks
 
 
 @celery.task
@@ -62,20 +94,3 @@ def crawl_site(self, target: str, submit_forms=True):
             if r.status_code == 200:
                 fill_submit_forms.delay(r.text)
     self.update_state(state="DONE", meta={'target': target})
-
-
-def push_update(data):
-    if data.get('status') == 'PROGRESS':
-        log(data['result']['status'] + " " + data['result']['target'], "http")
-    elif data.get('status') == 'DONE':
-        log('Finished HTTP attack on {}"'.format(data['result']['target']), "http", "success")
-
-
-def run_attack():
-    log("Starting HTTP attack.", "http")
-    r = []
-    for target in random_targets():
-        r.append(crawl_site.delay(target))
-    for status in r:
-        status.get(on_message=push_update, propagate=False)
-    log("Finished HTTP attack.", "http", "success")

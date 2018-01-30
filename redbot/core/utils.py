@@ -1,9 +1,10 @@
+import importlib
 import json
 import random
 from time import time
-from typing import List
+from typing import List, Any
 
-from redbot.async import storage
+from redbot.core.async import storage
 
 
 def log(text: str, tag: str = "General", style: str = "info"):
@@ -18,8 +19,12 @@ def get_log(end: int = -1) -> List[str]:
 
 
 def random_targets(req_port: int = 0):
-    from redbot.modules.nmap import get_hosts, targets
+    from redbot.modules.nmap import targets
     if req_port:
-        #targets = [h for h in get_hosts() if
+        # targets = [h for h in get_hosts() if
         pass
     return random.sample(targets, random.randint(1, len(targets)))
+
+
+def get_class(cname: str) -> Any:
+    return importlib.import_module(cname).cls
