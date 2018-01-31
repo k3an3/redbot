@@ -2,7 +2,7 @@ import importlib
 import json
 import random
 from time import time
-from typing import List, Any
+from typing import List, Any, Dict
 
 from redbot.core.async import storage
 
@@ -28,3 +28,7 @@ def random_targets(req_port: int = 0):
 
 def get_class(cname: str) -> Any:
     return importlib.import_module(cname).cls
+
+
+def get_core_settings() -> Dict:
+    return json.loads(storage.get('settings-redbot.core'))

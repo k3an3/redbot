@@ -1,15 +1,3 @@
-import os
-from logging.handlers import RotatingFileHandler
-
-import sys
-import logging
-
-from redbot import settings
-from redbot.core.configparser import parse
-from redbot.web.web import app, socketio
-
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-
 try:
     import eventlet
 
@@ -32,6 +20,18 @@ except ImportError:
         print('Using threading')
         create_thread_func = lambda f: threading.Thread(target=f)
         start_thread_func = lambda t: t.start()
+
+import os
+from logging.handlers import RotatingFileHandler
+
+import sys
+import logging
+
+from redbot import settings
+from redbot.core.configparser import parse
+from redbot.web.web import app, socketio
+
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 try:
     parse('config.yml')

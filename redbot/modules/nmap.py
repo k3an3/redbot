@@ -2,6 +2,7 @@ import json
 from time import sleep, time
 from typing import Dict
 
+from celery import group
 from libnmap.parser import NmapParser, NmapParserException
 from libnmap.process import NmapProcess
 
@@ -44,18 +45,12 @@ class NmapScan(Attack):
     @classmethod
     def run_scans(cls) -> None:
         storage.delete('hosts')
-        # The way I wish it worked:
-        # r = ResultSet([])
-        r = []
-        for target in targets:
-            r.append(nmap_scan.delay(target))
-        # But this blocks indefinitely even after tasks complete for some reason
-        # r.get(on_message=push_update, propagate=False)
-        for scan in r:
-            scan.get(on_message=cls.push_update, propagate=False)
+        g = group(nmap_scan.s(target) for target in targets).delay()
+        g.get(on_message=cls.push_update, propagate=False, disable_sync_subtasks=False)
         send_msg('Scan finished.')
         socketio.emit('scan finished', {}, broadcast=True)
         storage.set('last_scan', int(time()))
+
 
 cls = NmapScan
 
@@ -86,12 +81,15 @@ def get_last_scan() -> int:
 @celery.task
 def scheduled_scan():
     if int(time()) - get_last_scan() > NmapScan.get_setting('scan_interval'):
+        print("scanning now")
         NmapScan.run_scans()
+    else:
+        print("no need to scan")
 
 
 @celery.task(bind=True)
-def nmap_scan(self, target: Dict[str, str],
-              options: str = NmapScan.get_setting('scan_options')) -> None:
+def nmap_scan(self, target: Dict[str, str]) -> None:
+    options = NmapScan.get_setting('scan_options') + " " + NmapScan.get_setting('ports')
     nm = NmapProcess(target['range'], options=options)
     nm.run_background()
     while nm.is_running():

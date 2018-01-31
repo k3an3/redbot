@@ -48,8 +48,9 @@ class Attack:
         log(text, cls.name, style)
 
     @classmethod
-    def get_setting(cls, key):
-        return cls.get_settings().get(key, cls.settings[key])
+    def get_setting(cls, key) -> Any:
+        settings = cls.get_settings()
+        return settings.get(key)['value'] if key in settings else cls.settings[key]['default']
 
     @classmethod
     def get_settings(cls) -> Dict:
@@ -64,3 +65,13 @@ class Attack:
     @classmethod
     def set_settings(cls, data: Dict) -> None:
         storage.set(cls.get_storage_key(), json.dumps(data))
+
+    @classmethod
+    def merge_settings(cls) -> Dict:
+        s = cls.get_settings()
+        for setting in cls.settings:
+            try:
+                cls.settings[setting].update({'value': s.get(setting)})
+            except (TypeError, ValueError):
+                pass
+        return cls.settings

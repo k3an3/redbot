@@ -5,12 +5,19 @@ sidebar.click(function() {
     $(this).addClass('active');
 });
 
-$('input').on('blur', function() {
-    var m = $(this).attr('id').split('-');
+function update_setting(obj, val) {
+    var m = obj.attr('id').split('-');
     ws.emit('settings', {
         module: m[0],
         key: m[1],
-        value: $(this).val(),
+        value: val,
     });
+}
+
+$('input').on('blur', function() {
+    update_setting($(this), $(this).val());
 });
 
+$('checkbox').change(function() {
+    update_setting($(this), this.checked);
+});

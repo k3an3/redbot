@@ -1,11 +1,12 @@
 import importlib
+from typing import Dict
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 
 from redbot import settings
 from redbot.core.models import modules
-from redbot.core.utils import get_log, log, get_class
+from redbot.core.utils import get_log, log, get_class, get_core_settings
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
@@ -20,17 +21,11 @@ def index():
 @app.route('/settings')
 def settings():
     module_settings = []
+    # module_settings.append(('redbot.core', get_core_settings()))
     for module in modules:
         try:
             cls = get_class(module)
-            s = cls.get_settings()
-            for setting in cls.settings:
-                try:
-                    cls.settings[setting].update({'value': s.get(setting)})
-                except (TypeError, ValueError):
-                    pass
-            print(cls.settings)
-            module_settings.append((module, cls.settings))
+            module_settings.append((module, cls.merge_settings()))
         except (AttributeError, ImportError) as e:
             raise e
     return render_template('settings.html', modules=module_settings)
@@ -45,7 +40,6 @@ def logs():
 @socketio.on('settings')
 def settings_ws(data):
     if data['module'] in modules:
-        print(data)
         try:
             cls = get_class(data['module'])
         except (AttributeError, ImportError):
@@ -89,5 +83,27 @@ def msg():
     return '', 204
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.template_filter('format_setting')
+def format_setting(module: str, name: str, setting: Dict):
+    if type(setting.get('value', setting['default'])) == bool or type(setting['default']) == bool:
+        return """<div class="form-check">
+        <input class="form-check-input" type="checkbox" id="{module}-{setting}" {checked}>
+        <label for="{module}-{setting}">{name}</label>""".format(module=module, setting=name,
+                                                                 name=setting.get('name', name),
+                                                                 checked='checked' if setting.get('value', setting[
+                                                                     'default']) else '')
+    else:
+        desc = ''
+        if 'description' in setting:
+            desc = '<small class="form-text text-muted">{}</small>'.format(setting['description'])
+        return """<div class="form-group"> <label for="{module}-{setting}">{name}</label> <input class="form-control" 
+        type="text" id="{module}-{setting}" placeholder="{default}" value="{value}">{desc}""".format(module=module,
+                                                                                                     setting=name,
+                                                                                                     name=setting.get(
+                                                                                                         'name',
+                                                                                                         name),
+                                                                                                     default=setting[
+                                                                                                         'default'],
+                                                                                                     value=setting.get(
+                                                                                                         'value') or '',
+                                                                                                     desc=desc)

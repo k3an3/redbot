@@ -34,8 +34,8 @@ def run_jobs():
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(10, run_jobs.s(), name='Launch job scheduler')
-    from redbot.modules.nmap import NmapScan
-    sender.add_periodic_task(10, NmapScan.run_scans, name='Launch nmap scan')
+    from redbot.modules.nmap import scheduled_scan
+    sender.add_periodic_task(10, scheduled_scan.s(), name='Launch nmap scan')
 
 
 # IPC

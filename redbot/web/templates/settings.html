@@ -24,12 +24,7 @@
                         <h2>{{ module }}</h2>
                         <form>
                             {% for setting in settings %}
-                                <div class="form-group">
-                                    <label for="{{ module }}-{{ setting }}">{{ settings[setting]["name"] or setting }}</label>
-                                    <input class="form-control" type="text" id="{{ module }}-{{ setting }}" placeholder="{{ settings[setting]["default"] }}" value="{% if settings[setting]["value"] %}{{ settings[setting]["value"] }}{% endif %}">
-                                    {% if settings[setting]["description"] %}
-                                        <small class="form-text text-muted">{{ settings[setting]["description"] }}</small>
-                                    {% endif %}
+                                {{ module|format_setting(setting, settings[setting])|safe }}
                                 </div>
                             {% endfor %}
                         </form>

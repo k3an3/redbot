@@ -15,7 +15,19 @@ class SSHAttack(Attack):
             'name': 'Ports',
             'default': '22',
             'description': 'Comma-separated list of ports to target',
-        }
+        },
+        'userlist': {
+            'name': 'User List',
+            'default': 'users.txt',
+            'description': 'Path to a wordlist containing one username per line. Accepts file paths within the ' 
+                           'RedBot "files" directory, or a valid HTTP(S) URL.'
+        },
+        'passlist': {
+            'name': 'Password List',
+            'default': 'users.txt',
+            'description': 'Path to a wordlist containing one username per line. Accepts file paths within the '
+                           'RedBot "files" directory, or a valid HTTP(S) URL.'
+        },
     }
 
     @classmethod
@@ -28,6 +40,7 @@ class SSHAttack(Attack):
                                                                                     data['result']['password']),
                     "success")
 
+    @classmethod
     def run_attack(cls):
         cls.log("Starting SSH attack.")
         r = []

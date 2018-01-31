@@ -20,7 +20,12 @@ class HTTPAttacks(Attack):
         'ports': {
             'name': 'Ports',
             'default': '80',
-            'description': 'Comma-separated list of ports to target',
+            'description': "Comma-separated list of ports to target",
+        },
+        'submit_forms': {
+            'name': 'Auto-Submit Forms',
+            'default': True,
+            'description': "Whether the web crawler should fill out and submit forms with random data"
         }
     }
 
