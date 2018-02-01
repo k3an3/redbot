@@ -21,3 +21,13 @@ $('input').on('blur', function() {
 $('checkbox').change(function() {
     update_setting($(this), this.checked);
 });
+
+$('#restart').click(function() {
+    ws.emit('admin', {
+        command: 'restart',
+    })
+})
+
+ws.on('logs', function() {
+    logcount.html(parseInt(logcount.html()) + 1);
+});

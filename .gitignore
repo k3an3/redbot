@@ -3,3 +3,4 @@
 __pycache__/
 env/
 settings_local.py
+config.yml

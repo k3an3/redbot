@@ -1,0 +1,13 @@
+---
+targets:
+  - name: Team 1
+    range: 64.39.3.0/24
+  - name: Team 2
+    range: 33.96.5.0/24
+  - name: Team 3
+    range: 190.100.60.0/24
+
+modules:
+  - nmap
+  - httpweb
+  - ssh

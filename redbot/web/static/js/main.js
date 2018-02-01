@@ -29,6 +29,6 @@ ws.on('connect', function(data) {
     lastwsstate = true;
 });
 
-ws.on('logs', function(data) {
+ws.on('logs', function() {
     logcount.html(parseInt(logcount.html()) + 1);
 });
