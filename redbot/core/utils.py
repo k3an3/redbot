@@ -1,10 +1,11 @@
 import importlib
 import json
 import random
+import subprocess
 from time import time
 from typing import List, Any, Dict
 
-from redbot.core.async import storage
+from redbot.core.models import storage
 
 
 def log(text: str, tag: str = "General", style: str = "info"):
@@ -32,3 +33,7 @@ def get_class(cname: str) -> Any:
 
 def get_core_settings() -> Dict:
     return json.loads(storage.get('settings-redbot.core'))
+
+
+def restart_redbot() -> None:
+    subprocess.run(['sudo', 'systemctl', 'restart', 'redbot'])

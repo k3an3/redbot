@@ -3,8 +3,7 @@ import json
 import logging
 from typing import Dict, Any, List
 
-from redbot.core.async import storage
-from redbot.core.models import modules
+from redbot.core.models import modules, storage
 
 logger = logging.getLogger('redbot.modules')
 

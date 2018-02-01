@@ -1,12 +1,11 @@
-import importlib
 from typing import Dict
 
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 
 from redbot import settings
 from redbot.core.models import modules
-from redbot.core.utils import get_log, log, get_class, get_core_settings
+from redbot.core.utils import get_log, get_class
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
@@ -37,42 +36,6 @@ def logs():
     return render_template('logs.html', logs=get_log(count))
 
 
-@socketio.on('settings')
-def settings_ws(data):
-    if data['module'] in modules:
-        try:
-            cls = get_class(data['module'])
-        except (AttributeError, ImportError):
-            send_msg("Settings for that module cannot be modified.", "warning")
-            return
-        try:
-            cls.set_setting(data['key'], data['value'])
-        except Exception as e:
-            raise e
-            send_msg("There was an error updating settings.", "danger")
-            log(str(e), style="danger")
-        else:
-            send_msg("Settings updated.", "success")
-
-
-@socketio.on('run nmap')
-def nmap():
-    from redbot.modules.nmap import NmapScan
-    log("Nmap scan invoked from web.", "web")
-    send_msg("Running scan.")
-    NmapScan.run_scans()
-
-
-@socketio.on('get hosts')
-def get_hosts_ws(data):
-    from redbot.modules.nmap import get_last_scan, get_targets
-    last_scan = get_last_scan()
-    if data['scantime'] < last_scan:
-        emit('hosts', {'data': get_targets(), 'scantime': last_scan})
-    else:
-        emit('hosts', {'data': None, 'scantime': last_scan})
-
-
 def send_msg(message: str, alert: str = 'info') -> None:
     socketio.emit('message', {'class': alert, 'content': message}, broadcast=True)
 
@@ -88,22 +51,24 @@ def format_setting(module: str, name: str, setting: Dict):
     if type(setting.get('value', setting['default'])) == bool or type(setting['default']) == bool:
         return """<div class="form-check">
         <input class="form-check-input" type="checkbox" id="{module}-{setting}" {checked}>
-        <label for="{module}-{setting}">{name}</label>""".format(module=module, setting=name,
-                                                                 name=setting.get('name', name),
-                                                                 checked='checked' if setting.get('value', setting[
-                                                                     'default']) else '')
+        <label for="{module}-{setting}">{name}</label></div>""".format(module=module, setting=name,
+                                                                       name=setting.get('name', name),
+                                                                       checked='checked' if setting.get('value',
+                                                                                                        setting[
+                                                                                                            'default']) else '')
     else:
         desc = ''
         if 'description' in setting:
             desc = '<small class="form-text text-muted">{}</small>'.format(setting['description'])
         return """<div class="form-group"> <label for="{module}-{setting}">{name}</label> <input class="form-control" 
-        type="text" id="{module}-{setting}" placeholder="{default}" value="{value}">{desc}""".format(module=module,
-                                                                                                     setting=name,
-                                                                                                     name=setting.get(
-                                                                                                         'name',
-                                                                                                         name),
-                                                                                                     default=setting[
-                                                                                                         'default'],
-                                                                                                     value=setting.get(
-                                                                                                         'value') or '',
-                                                                                                     desc=desc)
+        type="text" id="{module}-{setting}" placeholder="{default}" value="{value}">{desc}</div>""".format(
+            module=module,
+            setting=name,
+            name=setting.get(
+                'name',
+                name),
+            default=setting[
+                'default'],
+            value=setting.get(
+                'value') or '',
+            desc=desc)

@@ -6,8 +6,8 @@ from celery import group
 from libnmap.parser import NmapParser, NmapParserException
 from libnmap.process import NmapProcess
 
-from redbot.core.async import celery, storage
-from redbot.core.models import targets
+from redbot.core.async import celery
+from redbot.core.models import targets, storage
 from redbot.modules import Attack
 from redbot.core.utils import log
 from redbot.web.web import socketio, send_msg
@@ -46,7 +46,7 @@ class NmapScan(Attack):
     def run_scans(cls) -> None:
         storage.delete('hosts')
         g = group(nmap_scan.s(target) for target in targets).delay()
-        g.get(on_message=cls.push_update, propagate=False, disable_sync_subtasks=False)
+        g.get(on_message=cls.push_update, propagate=False)
         send_msg('Scan finished.')
         socketio.emit('scan finished', {}, broadcast=True)
         storage.set('last_scan', int(time()))
