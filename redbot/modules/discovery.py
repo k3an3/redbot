@@ -1,16 +1,53 @@
+"""
+Data structure definitions:
+
+Targets:
+    Original format for storing hosts, grouped by target. Used by the frontend graph and table.
+
+    {
+        target:
+            (
+                (ip_address1, ([port1, proto], [port2, proto], [port3, proto])),
+                (ip_address2, ...)
+            )
+        target:
+            ...
+    }
+
+Hosts:
+    Newer format for storing hosts, hostname or IP address as key. Much easier to use everywhere else.
+
+    {
+        hostname: {
+                        'ports': [port1, port2, port3, ...],
+                        'target': target,
+                    },
+        hostname: {
+                        ...
+                    },
+        ...
+    }
+
+
+"""
 import json
+import socket
 from time import sleep, time
 from typing import Dict
 
+import requests
 from celery import group
 from libnmap.parser import NmapParser, NmapParserException
 from libnmap.process import NmapProcess
 
 from redbot.core.async import celery
 from redbot.core.models import targets, storage
+from redbot.core.utils import log, get_core_setting
 from redbot.modules import Attack
-from redbot.core.utils import log
+from redbot.settings import ISCORE_URL
 from redbot.web.web import socketio, send_msg
+
+URL = ISCORE_URL + '/api/v1/servicestatus'
 
 
 class NmapScan(Attack):
@@ -55,6 +92,22 @@ class NmapScan(Attack):
 cls = NmapScan
 
 
+def update_iscore_targets() -> None:
+    r = requests.get(URL, headers={'Content-Type': 'application/json'}).json()
+    hosts = {}
+    for host in r:
+        address = socket.gethostbyname(host['service_url'])  # IScorE URLs are not URLs
+        if not hosts.get(address):
+            hosts[address] = {'ports': [],
+                              'target': "Team " + str(host['team_number'])
+                              }
+        if not hosts[address].get('hostname'):
+            hosts[address]['hostname']: host['service_url']
+        if not host['service_status'] == "down":
+            hosts[address]['ports'].append(host['service_port'])
+    update_hosts(hosts)
+
+
 def get_hosts() -> Dict:
     return json.loads(storage.get('hosts') or "{}")
 
@@ -80,11 +133,15 @@ def get_last_scan() -> int:
 
 @celery.task
 def scheduled_scan():
-    if int(time()) - get_last_scan() > NmapScan.get_setting('scan_interval'):
-        print("scanning now")
-        NmapScan.run_scans()
-    else:
-        print("no need to scan")
+    discovery_type = get_core_setting('discovery_type')
+    if 'nmap' in discovery_type or 'both' in discovery_type:
+        if int(time()) - get_last_scan() > NmapScan.get_setting('scan_interval'):
+            print("scanning now")
+            NmapScan.run_scans()
+        else:
+            print("no need to scan")
+    if 'iscore' in discovery_type or 'both' in discovery_type:
+        update_iscore_targets()
 
 
 @celery.task(bind=True)

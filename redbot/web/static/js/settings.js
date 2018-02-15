@@ -1,4 +1,5 @@
 var sidebar = $('.sidebar .nav-item a');
+$('body').scrollspy({target: '#settings-sidebar', offset: 100});
 
 sidebar.click(function() {
     sidebar.removeClass('active');

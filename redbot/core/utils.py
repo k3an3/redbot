@@ -20,7 +20,7 @@ def get_log(end: int = -1) -> List[str]:
 
 
 def random_targets(req_port: int = 0):
-    from redbot.modules.nmap import targets
+    from redbot.modules.discovery import targets
     if req_port:
         # targets = [h for h in get_hosts() if
         pass
@@ -31,8 +31,48 @@ def get_class(cname: str) -> Any:
     return importlib.import_module(cname).cls
 
 
+def set_up_default_settings() -> Dict:
+    settings = {
+        'iscore_url': {
+            'name': 'IScorE URL',
+            'default': '',
+            'description': 'URL to the IScorE system to be used for API queries'
+        },
+        'discovery_type': {
+            'name': 'Host Discovery Method',
+            'default': 'nmap',
+            'description': 'Method for discovering targets. Can be "nmap", "iscore", or "both". IScorE requires a '
+                           'valid URL. '
+        }
+    }
+    set_core_settings(settings)
+
+
 def get_core_settings() -> Dict:
-    return json.loads(storage.get('settings-redbot.core'))
+    settings = json.loads(storage.get('settings-redbot.core') or '{}')
+    if not settings:
+        settings = set_up_default_settings()
+    return settings
+
+
+def get_core_setting(key) -> Any:
+    settings = get_core_settings()
+    setting = None
+    try:
+        setting = getattr(importlib.import_module('redbot.settings'), key.upper())
+    except (ImportError, AttributeError):
+        pass
+    return settings.get(key)['value'] if key in settings else setting
+
+
+def set_core_settings(data: Dict) -> None:
+    storage.set('settings-redbot.core', json.dumps(data))
+
+
+def set_core_setting(key: str, value: Any = None):
+    s = get_core_settings()
+    s[key]['value'] = value
+    set_core_settings(s)
 
 
 def restart_redbot() -> None:

@@ -5,11 +5,11 @@ from flask_socketio import SocketIO
 
 from redbot import settings
 from redbot.core.models import modules
-from redbot.core.utils import get_log, get_class
+from redbot.core.utils import get_log, get_class, get_core_settings
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins=[])
 
 
 @app.route('/')
@@ -19,8 +19,7 @@ def index():
 
 @app.route('/settings')
 def settings():
-    module_settings = []
-    # module_settings.append(('redbot.core', get_core_settings()))
+    module_settings = [('redbot.core', get_core_settings())]
     for module in modules:
         try:
             cls = get_class(module)
