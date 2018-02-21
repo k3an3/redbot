@@ -12,9 +12,9 @@ class SSHAttack(Attack):
     name = "ssh_attack"
     settings = {
         'ports': {
-            'name': 'Ports',
+            'name': 'Target Ports',
             'default': '22',
-            'description': 'Comma-separated list of ports to target',
+            'description': 'Comma-separated list of ports to target.',
         },
         'userlist': {
             'name': 'User List',

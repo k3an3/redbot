@@ -1,11 +1,3 @@
-var sidebar = $('.sidebar .nav-item a');
-$('body').scrollspy({target: '#settings-sidebar', offset: 100});
-
-sidebar.click(function() {
-    sidebar.removeClass('active');
-    $(this).addClass('active');
-});
-
 function update_setting(obj, val) {
     var m = obj.attr('id').split('-');
     ws.emit('settings', {
@@ -15,20 +7,16 @@ function update_setting(obj, val) {
     });
 }
 
-$('input').on('blur', function() {
+$('.form-control').on('blur', function() {
     update_setting($(this), $(this).val());
 });
 
-$('checkbox').change(function() {
+$('.form-check-input').change(function() {
     update_setting($(this), this.checked);
 });
 
 $('#restart').click(function() {
     ws.emit('admin', {
         command: 'restart',
-    })
-})
-
-ws.on('logs', function() {
-    logcount.html(parseInt(logcount.html()) + 1);
+    });
 });

@@ -66,8 +66,9 @@ class NmapScan(Attack):
             'description': 'Comma-separated TCP ports to scan'
         },
         'scan_interval': {
-            'name': 'Scan Interval (seconds)',
-            'default': 60 * 10
+            'name': 'Scan Interval',
+            'default': 60 * 10,
+            'description': 'How often (in seconds) to perform nmap scans.'
         }
     }
 
@@ -83,6 +84,7 @@ class NmapScan(Attack):
     def run_scans(cls) -> None:
         storage.delete('hosts')
         g = group(nmap_scan.s(target) for target in targets).delay()
+        return g
         g.get(on_message=cls.push_update, propagate=False)
         send_msg('Scan finished.')
         socketio.emit('scan finished', {}, broadcast=True)
