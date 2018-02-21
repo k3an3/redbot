@@ -20,10 +20,10 @@ def get_log(end: int = -1) -> List[str]:
 
 
 def random_targets(req_port: int = 0):
-    from redbot.modules.discovery import targets
+    from redbot.modules.discovery import get_hosts
+    targets = get_hosts()
     if req_port:
-        # targets = [h for h in get_hosts() if
-        pass
+        targets = [h for h in targets if req_port in h['ports']]
     return random.sample(targets, random.randint(1, len(targets)))
 
 
@@ -36,14 +36,19 @@ def set_up_default_settings() -> Dict:
         'iscore_url': {
             'name': 'IScorE URL',
             'default': '',
-            'description': 'URL to the IScorE system to be used for API queries'
+            'description': 'URL to the IScorE system to be used for API queries.'
+        },
+        'update_frequency': {
+            'name': 'IScorE Check Frequency',
+            'default': 5 * 60,
+            'description': 'How often (in seconds) to poll the IScorE servicecheck API.'
         },
         'discovery_type': {
             'name': 'Host Discovery Method',
             'default': 'nmap',
             'description': 'Method for discovering targets. Can be "nmap", "iscore", or "both". IScorE requires a '
                            'valid URL. '
-        }
+        },
     }
     set_core_settings(settings)
 
@@ -62,7 +67,7 @@ def get_core_setting(key) -> Any:
         setting = getattr(importlib.import_module('redbot.settings'), key.upper())
     except (ImportError, AttributeError):
         pass
-    return settings.get(key)['value'] if key in settings else setting
+    return settings[key].get('value', settings[key]['default']) if key in settings else setting
 
 
 def set_core_settings(data: Dict) -> None:

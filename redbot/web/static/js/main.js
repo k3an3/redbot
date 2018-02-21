@@ -2,6 +2,13 @@ var ws = io.connect('//' + document.domain + ':' + location.port);
 var messages = $('#messages');
 var logcount = $('#logcount');
 var lastwsstate = true;
+var sidebar = $('.sidebar .nav-item a');
+$('body').scrollspy({target: '.sidebar', offset: 100});
+
+sidebar.click(function() {
+    sidebar.removeClass('active');
+    $(this).addClass('active');
+});
 
 messages.hide();
 
