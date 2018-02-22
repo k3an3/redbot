@@ -15,8 +15,8 @@ $('.form-check-input').change(function() {
     update_setting($(this), this.checked);
 });
 
-$('#restart').click(function() {
+$('#redbot button').click(function() {
     ws.emit('admin', {
-        command: 'restart',
+        command: $(this).attr('id')
     });
 });

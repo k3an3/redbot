@@ -37,6 +37,7 @@ from typing import Dict
 
 import requests
 from celery import group
+from celery.result import allow_join_result
 from libnmap.parser import NmapParser, NmapParserException
 from libnmap.process import NmapProcess
 
@@ -82,16 +83,22 @@ class NmapScan(Attack):
 
     @classmethod
     def run_scans(cls) -> None:
-        storage.delete('hosts')
+        clear_targets()
         g = group(nmap_scan.s(target) for target in targets).delay()
-        return g
-        g.get(on_message=cls.push_update, propagate=False)
+        with allow_join_result():
+            g.get(on_message=cls.push_update, propagate=False)
         send_msg('Scan finished.')
         socketio.emit('scan finished', {}, broadcast=True)
         storage.set('last_scan', int(time()))
 
 
 cls = NmapScan
+
+
+def clear_targets() -> None:
+    storage.delete('hosts')
+    storage.delete('targets')
+    storage.set('last_scan', 0)
 
 
 def update_iscore_targets() -> None:

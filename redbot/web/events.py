@@ -1,6 +1,6 @@
 from flask_socketio import emit
 
-from redbot.core.models import modules
+from redbot.core.models import modules, storage
 from redbot.core.utils import get_class, log, restart_redbot, set_core_setting
 from redbot.web.web import socketio, send_msg
 
@@ -37,6 +37,14 @@ def settings_ws(data):
 def admin_ws(data):
     if data['command'] == 'restart':
         restart_redbot()
+    elif data['command'] == 'clear':
+        from redbot.modules.discovery import clear_targets
+        clear_targets()
+        send_msg("Targets cleared.", "warning")
+        log("Targets cleared.", style="warning")
+    elif data['command'] == 'clearlogs':
+        storage.delete('log')
+        send_msg("Logs cleared.", "warning")
 
 
 @socketio.on('run nmap')
