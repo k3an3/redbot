@@ -38,6 +38,11 @@ def set_up_default_settings() -> Dict:
             'default': '',
             'description': 'URL to the IScorE system to be used for API queries.'
         },
+        'iscore_api': {
+            'name': 'IScorE API Token (optional)',
+            'default': '',
+            'description': 'An API token obtained from IScorE. May increase functionality and performance',
+        },
         'update_frequency': {
             'name': 'IScorE Check Frequency',
             'default': 5 * 60,

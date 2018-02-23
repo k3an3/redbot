@@ -37,6 +37,7 @@ from typing import Dict
 
 import requests
 from celery import group
+from celery.result import allow_join_result
 from libnmap.parser import NmapParser, NmapParserException
 from libnmap.process import NmapProcess
 
@@ -44,10 +45,8 @@ from redbot.core.async import celery
 from redbot.core.models import targets, storage
 from redbot.core.utils import log, get_core_setting
 from redbot.modules import Attack
-from redbot.settings import ISCORE_URL
+from redbot.settings import TEAM_DOMAIN_SUFFIX
 from redbot.web.web import socketio, send_msg
-
-URL = ISCORE_URL + '/api/v1/servicestatus'
 
 
 class NmapScan(Attack):
@@ -82,32 +81,62 @@ class NmapScan(Attack):
 
     @classmethod
     def run_scans(cls) -> None:
-        storage.delete('hosts')
+        clear_targets()
         g = group(nmap_scan.s(target) for target in targets).delay()
-        return g
-        g.get(on_message=cls.push_update, propagate=False)
+        with allow_join_result():
+            g.get(on_message=cls.push_update, propagate=False)
         send_msg('Scan finished.')
         socketio.emit('scan finished', {}, broadcast=True)
-        storage.set('last_scan', int(time()))
 
 
 cls = NmapScan
 
 
+def get_url() -> str:
+    return get_core_setting('iscore_url') + '/api/v1/'
+
+
+def clear_targets() -> None:
+    storage.delete('hosts')
+    storage.delete('targets')
+    storage.set('last_scan', 0)
+
+
+@celery.task
+def dns_lookup(hostname: str) -> str:
+    try:
+        return {hostname: socket.gethostbyname(hostname)}  # IScorE URLs are not URLs. This call is also IPv4 only.
+    except socket.gaierror:
+        return {hostname: hostname}
+
+
 def update_iscore_targets() -> None:
-    r = requests.get(URL, headers={'Content-Type': 'application/json'}).json()
+    r = requests.get(get_url() + 'servicestatus', headers={'Content-Type': 'application/json'}).json()
     hosts = {}
+    records = {}
+    if get_core_setting('iscore_api'):
+        r2 = requests.get(get_url() + 'dns', headers={
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + get_core_setting('iscore_api').strip()
+        }).json()
+        for rec in r2:
+            records['{}.team{}.{}'.format(rec['name'], rec['team_number'], TEAM_DOMAIN_SUFFIX)] = rec['value']
+    else:
+        lookups = group(dns_lookup.s(host['service_url'] for host in r))
+        [records.update(l) for l in lookups.get()]
     for host in r:
-        address = socket.gethostbyname(host['service_url'])  # IScorE URLs are not URLs
-        if not hosts.get(address):
-            hosts[address] = {'ports': [],
-                              'target': "Team " + str(host['team_number'])
-                              }
-        if not hosts[address].get('hostname'):
-            hosts[address]['hostname']: host['service_url']
+        hostn = records.get(host['service_url'], host['service_url'])
+        if not hosts.get(hostn):
+            hosts[hostn] = {'ports': [],
+                            'target': "Team " + str(host['team_number'])
+                            }
+        if not hosts[hostn].get('hostname'):
+            hosts[hostn]['hostname'] = host['service_url']
         if not host['service_status'] == "down":
-            hosts[address]['ports'].append(host['service_port'])
+            hosts[hostn]['ports'].append(host['service_port'])
     update_hosts(hosts)
+    send_msg('IScorE update finished.')
+    socketio.emit('scan finished', {}, broadcast=True)
 
 
 def get_hosts() -> Dict:
@@ -144,6 +173,7 @@ def scheduled_scan():
             print("no need to scan")
     if 'iscore' in discovery_type or 'both' in discovery_type:
         update_iscore_targets()
+    storage.set('last_scan', int(time()))
 
 
 @celery.task(bind=True)

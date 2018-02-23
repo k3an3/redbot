@@ -8,6 +8,6 @@ targets:
     range: 190.100.60.0/24
 
 modules:
-  - nmap
+  - discovery
   - httpweb
   - ssh

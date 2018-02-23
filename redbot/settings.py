@@ -1,6 +1,6 @@
 DEBUG = False
 SECRET_KEY = 'changeme'
-ISCORE_URL = ''
+TEAM_DOMAIN_SUFFIX = 'isucdc.com'
 
 try:
     from redbot.settings_local import *
