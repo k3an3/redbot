@@ -17,6 +17,10 @@ from redbot.core.utils import get_core_setting
 if not modules:
     modules = get_modules('config.yml')
 celery = Celery(include=modules, backend='redis://', broker='redis://')
+celery.conf.update(
+    CELERY_TASK_SOFT_TIME_LIMIT=600,
+)
+
 
 scheduler = BlockingScheduler()
 
@@ -35,6 +39,8 @@ def run_jobs() -> None:
 
 
 def set_up_periodic_tasks() -> None:
+    run_jobs()
     scheduler.add_job(run_jobs, 'interval', seconds=10)
-    from redbot.modules.discovery import scheduled_scan
-    scheduler.add_job(scheduled_scan, 'interval', seconds=60)
+    from redbot.modules.discovery import do_discovery
+    do_discovery()
+    scheduler.add_job(do_discovery, 'interval', seconds=10)

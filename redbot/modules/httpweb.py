@@ -1,5 +1,8 @@
+import random
+
 import requests
 from bs4 import BeautifulSoup
+from celery import group
 from faker import Faker
 from http_crawler import crawl
 
@@ -43,12 +46,12 @@ class HTTPAttacks(Attack):
 
     @classmethod
     def run_attack(cls):
+        attacks = [do_nikto, crawl_site]
         cls.log("Starting HTTP attack.")
-        r = []
-        for target in random_targets():
-            r.append(crawl_site.delay(target))
-        for status in r:
-            status.get(on_message=cls.push_update, propagate=False)
+        targets = (random_targets(int(port) for port in cls.get_setting('ports').replace(' ', '').split(',')))
+        attacks = random.choices(attacks, random.randint(1, len(attacks)))
+        g = group(random.choice(attacks).s(target) for target in targets)()
+        g.get(on_message=cls.push_update, propagate=False)
         cls.log("Finished HTTP attack.", "success")
 
 
@@ -104,3 +107,8 @@ def crawl_site(self, target: str, submit_forms=True):
             if r.status_code == 200:
                 fill_submit_forms.delay(r.text)
     self.update_state(state="DONE", meta={'target': target})
+
+
+@celery.task(bind=True)
+def do_nikto():
+    pass

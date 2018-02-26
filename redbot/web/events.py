@@ -2,7 +2,6 @@ from flask_socketio import emit
 
 from redbot.core.models import modules, storage
 from redbot.core.utils import get_class, log, restart_redbot, set_core_setting
-from redbot.modules.discovery import get_last_update
 from redbot.web.web import socketio, send_msg
 
 
@@ -50,15 +49,15 @@ def admin_ws(data):
 
 @socketio.on('run nmap')
 def nmap():
-    from redbot.modules.discovery import scheduled_scan
+    from redbot.modules.discovery import do_discovery
     log("Discovery scan invoked from web.", "web")
     send_msg("Running scan.")
-    scheduled_scan(force=True)
+    do_discovery(force=True)
 
 
 @socketio.on('get hosts')
 def get_hosts_ws(data):
-    from redbot.modules.discovery import get_last_scan, get_hosts
+    from redbot.modules.discovery import get_last_scan, get_last_update, get_hosts
     last_scan = max(get_last_scan(), get_last_update())
     if data['scantime'] < last_scan:
         emit('hosts', {'data': get_hosts(), 'scantime': last_scan})

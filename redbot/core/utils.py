@@ -5,7 +5,10 @@ import subprocess
 from time import time
 from typing import List, Any, Dict
 
+import os
+
 from redbot.core.models import storage
+from redbot.settings import DEBUG
 
 
 def log(text: str, tag: str = "General", style: str = "info"):
@@ -19,12 +22,12 @@ def get_log(end: int = -1) -> List[str]:
     return [json.loads(_) for _ in storage.lrange('log', 0, end)]
 
 
-def random_targets(req_port: int = 0):
+def random_targets(req_port: int = 0, pressure: int = 0):
     from redbot.modules.discovery import get_hosts
     targets = get_hosts()
     if req_port:
         targets = [h for h in targets if req_port in h['ports']]
-    return random.sample(targets, random.randint(1, len(targets)))
+    return random.sample(targets, pressure or random.randint(1, len(targets)))
 
 
 def get_class(cname: str) -> Any:
@@ -70,4 +73,11 @@ def set_core_setting(key: str, value: Any = None):
 
 
 def restart_redbot() -> None:
-    subprocess.run(['sudo', 'systemctl', 'restart', 'redbot'])
+    from redbot.web import send_msg
+    if os.getppid() == 1:
+        send_msg('Restarted service.')
+        subprocess.run(['sudo', 'systemctl', 'restart', 'redbot'])
+    elif DEBUG:
+        os.system("touch redbot/web/web.py")
+        send_msg('Attempting to restart Flask debugger...')
+

