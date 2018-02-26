@@ -35,7 +35,7 @@ from redbot.settings import TEAM_DOMAIN_SUFFIX
 from redbot.web.web import socketio, send_msg
 
 
-class NmapScan(Attack):
+class Discovery(Attack):
     name = "nmap"
     exempt = True
 
@@ -54,13 +54,35 @@ class NmapScan(Attack):
             'name': 'Scan Interval',
             'default': 60 * 10,
             'description': 'How often (in seconds) to perform nmap scans.'
-        }
+        },
+        'iscore_url': {
+            'name': 'IScorE URL',
+            'default': '',
+            'description': 'URL to the IScorE system to be used for API queries.'
+        },
+        'iscore_api': {
+            'name': 'IScorE API Token (optional)',
+            'default': '',
+            'description': 'An API token obtained from IScorE. May increase functionality and performance',
+        },
+        'update_frequency': {
+            'name': 'IScorE Check Frequency',
+            'default': 5 * 60,
+            'description': 'How often (in seconds) to poll the IScorE servicecheck API.'
+        },
+        'discovery_type': {
+            'name': 'Host Discovery Method',
+            'default': 'nmap',
+            'description': 'Method for discovering targets. Can be "nmap", "iscore", or "both". IScorE requires a '
+                           'valid URL. '
+        },
     }
 
     @classmethod
     def push_update(cls, data):
         if data.get('status') == 'RESULTS':
-            hosts = {host[0]: {'ports': host[1], 'target': data['result']['target']} for host in data['result']['hosts']}
+            hosts = {host[0]: {'ports': host[1], 'target': data['result']['target']} for host in
+                     data['result']['hosts']}
             update_hosts(hosts)
             log("Completed nmap scan against " + data['result']['target'], "nmap", "success")
         socketio.emit('nmap progress', data, broadcast=True)
@@ -74,7 +96,7 @@ class NmapScan(Attack):
         socketio.emit('scan finished', {}, broadcast=True)
 
 
-cls = NmapScan
+cls = Discovery
 
 
 def get_url() -> str:
@@ -84,7 +106,8 @@ def get_url() -> str:
 def clear_targets() -> None:
     storage.delete('hosts')
     storage.delete('targets')
-    storage.set('last_scan', 0)
+    storage.set('last_nmap_scan', 0)
+    storage.set('last_iscore_update', 0)
 
 
 @celery.task
@@ -139,25 +162,31 @@ def update_hosts(hosts) -> None:
 
 
 def get_last_scan() -> int:
-    return int(storage.get('last_scan') or 0)
+    return int(storage.get('last_nmap_scan') or 0)
+
+
+def get_last_update() -> int:
+    return int(storage.get('last_iscore_update') or 0)
 
 
 def scheduled_scan(force: bool = False):
     discovery_type = get_core_setting('discovery_type')
     if 'nmap' in discovery_type or 'both' in discovery_type:
-        if force or int(time()) - get_last_scan() > NmapScan.get_setting('scan_interval'):
+        if force or int(time()) - get_last_scan() > Discovery.get_setting('scan_interval'):
+            storage.set('last_nmap_scan', int(time()))
             print("scanning now")
-            NmapScan.run_scans()
+            Discovery.run_scans()
         else:
             print("no need to scan")
     if 'iscore' in discovery_type or 'both' in discovery_type:
-        update_iscore_targets()
-    storage.set('last_scan', int(time()))
+        if force or int(time()) - get_last_update() > get_core_setting('update_frequency'):
+            storage.set('last_iscore_update', int(time()))
+            update_iscore_targets()
 
 
 @celery.task(bind=True)
 def nmap_scan(self, target: Dict[str, str]) -> None:
-    options = NmapScan.get_setting('scan_options') + " " + NmapScan.get_setting('ports')
+    options = Discovery.get_setting('scan_options') + " " + Discovery.get_setting('ports')
     nm = NmapProcess(target['range'], options=options)
     nm.run_background()
     while nm.is_running():

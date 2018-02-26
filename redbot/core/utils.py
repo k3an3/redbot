@@ -33,26 +33,11 @@ def get_class(cname: str) -> Any:
 
 def set_up_default_settings() -> Dict:
     settings = {
-        'iscore_url': {
-            'name': 'IScorE URL',
-            'default': '',
-            'description': 'URL to the IScorE system to be used for API queries.'
-        },
-        'iscore_api': {
-            'name': 'IScorE API Token (optional)',
-            'default': '',
-            'description': 'An API token obtained from IScorE. May increase functionality and performance',
-        },
-        'update_frequency': {
-            'name': 'IScorE Check Frequency',
-            'default': 5 * 60,
-            'description': 'How often (in seconds) to poll the IScorE servicecheck API.'
-        },
-        'discovery_type': {
-            'name': 'Host Discovery Method',
-            'default': 'nmap',
-            'description': 'Method for discovering targets. Can be "nmap", "iscore", or "both". IScorE requires a '
-                           'valid URL. '
+        'enable_attacks': {
+            'name': 'Enable Attacks',
+            'default': False,
+            'description': 'By enabling this, your specified targets will be attacked!'
+
         },
     }
     set_core_settings(settings)

@@ -47,16 +47,18 @@ def msg():
 
 @app.template_filter('format_setting')
 def format_setting(module: str, name: str, setting: Dict):
+    desc = ''
     if type(setting.get('value', setting['default'])) == bool or type(setting['default']) == bool:
+        if 'description' in setting:
+            desc = '<small class="form-text text-muted">{}</small>'.format(setting['description'])
         return """<div class="form-check">
         <input class="form-check-input" type="checkbox" id="{module}-{setting}" {checked}>
-        <label for="{module}-{setting}">{name}</label></div>""".format(module=module, setting=name,
-                                                                       name=setting.get('name', name),
-                                                                       checked='checked' if setting.get('value',
-                                                                                                        setting[
-                                                                                                            'default']) else '')
+        <label for="{module}-{setting}">{name}</label>{desc}</div>""".format(
+            module=module, setting=name,
+            name=setting.get('name', name),
+            checked='checked' if setting.get('value', setting['default']) else '',
+            desc=desc)
     else:
-        desc = ''
         if 'description' in setting:
             desc = '<small class="form-text text-muted">{}</small>'.format(setting['description'])
         return """<div class="form-group"> <label for="{module}-{setting}">{name}</label> <input class="form-control" 
