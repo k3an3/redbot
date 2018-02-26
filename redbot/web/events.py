@@ -52,14 +52,14 @@ def nmap():
     from redbot.modules.discovery import scheduled_scan
     log("Discovery scan invoked from web.", "web")
     send_msg("Running scan.")
-    scheduled_scan()
+    scheduled_scan(force=True)
 
 
 @socketio.on('get hosts')
 def get_hosts_ws(data):
-    from redbot.modules.discovery import get_last_scan, get_targets
+    from redbot.modules.discovery import get_last_scan, get_hosts
     last_scan = get_last_scan()
     if data['scantime'] < last_scan:
-        emit('hosts', {'data': get_targets(), 'scantime': last_scan})
+        emit('hosts', {'data': get_hosts(), 'scantime': last_scan})
     else:
         emit('hosts', {'data': None, 'scantime': last_scan})
