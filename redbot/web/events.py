@@ -2,6 +2,7 @@ from flask_socketio import emit
 
 from redbot.core.models import modules, storage
 from redbot.core.utils import get_class, log, restart_redbot, set_core_setting
+from redbot.modules.discovery import get_last_update
 from redbot.web.web import socketio, send_msg
 
 
@@ -58,7 +59,7 @@ def nmap():
 @socketio.on('get hosts')
 def get_hosts_ws(data):
     from redbot.modules.discovery import get_last_scan, get_hosts
-    last_scan = get_last_scan()
+    last_scan = max(get_last_scan(), get_last_update())
     if data['scantime'] < last_scan:
         emit('hosts', {'data': get_hosts(), 'scantime': last_scan})
     else:

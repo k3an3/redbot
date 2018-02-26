@@ -36,8 +36,7 @@ def set_up_default_settings() -> Dict:
         'enable_attacks': {
             'name': 'Enable Attacks',
             'default': False,
-            'description': 'By enabling this, your specified targets will be attacked!'
-
+            'description': 'By enabling this, all specified and/or discovered targets will be attacked!'
         },
     }
     set_core_settings(settings)

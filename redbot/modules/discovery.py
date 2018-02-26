@@ -29,7 +29,7 @@ from libnmap.process import NmapProcess
 
 from redbot.core.async import celery
 from redbot.core.models import targets, storage
-from redbot.core.utils import log, get_core_setting
+from redbot.core.utils import log
 from redbot.modules import Attack
 from redbot.settings import TEAM_DOMAIN_SUFFIX
 from redbot.web.web import socketio, send_msg
@@ -100,7 +100,7 @@ cls = Discovery
 
 
 def get_url() -> str:
-    return get_core_setting('iscore_url') + '/api/v1/'
+    return Discovery.get_setting('iscore_url') + '/api/v1/'
 
 
 def clear_targets() -> None:
@@ -122,10 +122,10 @@ def update_iscore_targets() -> None:
     r = requests.get(get_url() + 'servicestatus', headers={'Content-Type': 'application/json'}).json()
     hosts = {}
     records = {}
-    if get_core_setting('iscore_api'):
+    if Discovery.get_setting('iscore_api'):
         r2 = requests.get(get_url() + 'dns', headers={
             'Content-Type': 'application/json',
-            'Authorization': 'Token ' + get_core_setting('iscore_api').strip()
+            'Authorization': 'Token ' + Discovery.get_setting('iscore_api').strip()
         }).json()
         for rec in r2:
             records['{}.team{}.{}'.format(rec['name'], rec['team_number'], TEAM_DOMAIN_SUFFIX)] = rec['value']
@@ -155,7 +155,7 @@ def update_hosts(hosts) -> None:
     current_hosts = get_hosts()
     for host in hosts:
         if host in current_hosts:
-            current_hosts[host]['ports'] += host['ports']
+            current_hosts[host]['ports'] = list(set(hosts[host]['ports'] + current_hosts[host]['ports']))
         else:
             current_hosts[host] = hosts[host]
     storage.set('hosts', json.dumps(current_hosts))
@@ -170,7 +170,7 @@ def get_last_update() -> int:
 
 
 def scheduled_scan(force: bool = False):
-    discovery_type = get_core_setting('discovery_type')
+    discovery_type = Discovery.get_setting('discovery_type')
     if 'nmap' in discovery_type or 'both' in discovery_type:
         if force or int(time()) - get_last_scan() > Discovery.get_setting('scan_interval'):
             storage.set('last_nmap_scan', int(time()))
@@ -179,7 +179,7 @@ def scheduled_scan(force: bool = False):
         else:
             print("no need to scan")
     if 'iscore' in discovery_type or 'both' in discovery_type:
-        if force or int(time()) - get_last_update() > get_core_setting('update_frequency'):
+        if force or int(time()) - get_last_update() > Discovery.get_setting('update_frequency'):
             storage.set('last_iscore_update', int(time()))
             update_iscore_targets()
 

@@ -49,7 +49,7 @@ class Attack:
     @classmethod
     def get_setting(cls, key) -> Any:
         settings = cls.get_settings()
-        return settings.get(key)['value'] if key in settings else cls.settings[key]['default']
+        return settings[key] if key in settings else cls.settings[key]['default']
 
     @classmethod
     def get_settings(cls) -> Dict:
