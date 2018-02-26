@@ -1,3 +1,5 @@
+from redbot.core.async import scheduler, set_up_periodic_tasks
+
 try:
     import eventlet
 
@@ -43,4 +45,6 @@ handler.setLevel(logging.INFO)
 handler.setFormatter(logging.Formatter("%(asctime)s: %(message)s"))
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.INFO)
+set_up_periodic_tasks()
+scheduler.start()
 socketio.run(app, debug=settings.DEBUG)

@@ -7,6 +7,7 @@ Manages the setup for task handling.
 import importlib
 import random
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from celery import Celery
 
 from redbot.core.configparser import get_modules
@@ -16,9 +17,10 @@ if not modules:
     modules = get_modules('config.yml')
 celery = Celery(include=modules, backend='redis://', broker='redis://')
 
+scheduler = BackgroundScheduler()
 
-@celery.task
-def run_jobs():
+
+def run_jobs() -> None:
     while True:
         try:
             attack = importlib.import_module(random.choice(modules)).cls
@@ -27,11 +29,10 @@ def run_jobs():
         else:
             if not attack.exempt:
                 break
-    print(attack)
+    print("Would run attack", attack)
 
 
-@celery.on_after_configure.connect
-def setup_periodic_tasks(sender, **kwargs):
-    sender.add_periodic_task(10, run_jobs.s(), name='Launch job scheduler')
+def set_up_periodic_tasks() -> None:
+    scheduler.add_periodic_task(10, run_jobs.s(), name='Launch job scheduler')
     from redbot.modules.discovery import scheduled_scan
-    sender.add_periodic_task(10, scheduled_scan.s(), name='Launch nmap scan')
+    scheduler.add_periodic_task(10, scheduled_scan.s(), name='Launch nmap scan')
