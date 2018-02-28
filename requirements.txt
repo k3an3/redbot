@@ -5,7 +5,7 @@ pip
 celery
 eventlet
 faker
-flask
+Flask
 flask-socketio
 http_crawler
 paramiko
