@@ -140,6 +140,7 @@ ws.on('nmap progress', function(data) {
         data.result.hosts.forEach(graph_host, data.result.target);
         targets[data.result.target] = 100;
     } else if (data.status == 'SUCCESS') {
+        targets = {};
     }
 });
 

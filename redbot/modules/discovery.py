@@ -92,7 +92,7 @@ class Discovery(Attack):
     def run_scans(cls, ondemand: bool = False) -> None:
         storage.set('scan_in_progress', True)
         clear_targets()
-        g = group(nmap_scan.s(target) for target in targets)()
+        g = group(nmap_scan.s(target) for target in targets).apply_async(queue='discovery')
         if ondemand:
             g.get(on_message=cls.push_update, propagate=False)
         storage.set('last_nmap_scan', int(time()))

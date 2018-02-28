@@ -32,7 +32,7 @@ def random_targets(req_port: int = 0, pressure: int = 0):
     if not len(targets):
         raise NoTargetsError()
     if req_port:
-        targets = [h for h in targets if req_port in targets[h]['ports']]
+        targets = [(h, req_port) for h in targets if req_port in targets[h]['ports']]
     return random.sample(list(targets), pressure or random.randint(1, len(targets)))
 
 

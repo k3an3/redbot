@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Tuple
 
 import requests
 from bs4 import BeautifulSoup
@@ -9,8 +9,8 @@ from faker import Faker
 from http_crawler import crawl
 
 from redbot.core.async import celery
-from redbot.core.utils import log, random_targets
 from redbot.modules import Attack
+from redbot.modules.discovery import get_hosts
 
 settings = {
     'ports': {
@@ -53,11 +53,16 @@ class HTTPAttacks(Attack):
             attacks.append(run_nikto)
         cls.log("Starting HTTP attack.")
         targets = cls.get_random_targets()
-        group(random.choice(attacks).s(target) for target in targets)()
+        g = group(random.choice(attacks).s(target) for target in targets)()
         return g, targets
 
 
 cls = HTTPAttacks
+
+
+def get_proper_url(target: Tuple[str, int]) -> str:
+    hostname = get_hosts()[target[0]].get('hostname', target[0])
+    return 'http{}://{}:{}'.format('s' if target[1] == 443 else '', hostname, target[1])
 
 
 @celery.task
@@ -101,14 +106,16 @@ def fill_submit_forms(resp):
 
 
 @celery.task
-def crawl_site(target: str, submit_forms=True):
-    results = crawl(target, follow_external_links=False)
+def crawl_site(target: Tuple[str, int], submit_forms=True):
+    results = crawl(get_proper_url(target), follow_external_links=False)
     if submit_forms:
         for r in results:
             if r.status_code == 200:
                 fill_submit_forms.delay(r.text)
+    cls.log("Finished crawling {}:{}".format(*target))
 
 
 @celery.task
-def run_nikto(target: str):
+def run_nikto(target: Tuple[str, int]):
+    cls.log("Finished Nikto on {}:{}".format(*target))
     pass

@@ -45,7 +45,7 @@ class SSHAttack(Attack):
             users = ul.readlines()
             passwords = pl.readlines()
         targets = cls.get_random_targets()
-        g = group(ssh_brute_force.s(target, users=users, passwords=passwords) for target in targets)()
+        g = group(ssh_brute_force.s(*target, users=users, passwords=passwords) for target in targets)()
         return g, targets
 
 

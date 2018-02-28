@@ -1,0 +1,14 @@
+[Unit]
+Description=Redbot Task Queue
+After=network.target
+BindsTo=redbot.service
+Requires=redis.service
+
+[Service]
+User=redbot
+Group=redbot
+WorkingDirectory=/srv/redbot
+ExecStart=/srv/redbot/env/bin/celery multi start 2 -Q:1 discovery -Q:2 celery -A redbot.core.async.celery --loglevel=info
+
+[Install]
+WantedBy=multi-user.target

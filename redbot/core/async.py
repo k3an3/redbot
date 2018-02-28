@@ -34,4 +34,4 @@ def setup_periodic_tasks(sender, **kwargs):
         parse('config.yml')
     sender.add_periodic_task(10, run_jobs.s(), name='Launch attacks')
     from redbot.modules.discovery import do_discovery
-    sender.add_periodic_task(10, do_discovery.s(), name='Launch discovery')
+    sender.add_periodic_task(10, do_discovery.s(), queue='discovery', name='Launch discovery')
