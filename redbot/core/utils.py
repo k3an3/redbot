@@ -1,15 +1,17 @@
 import importlib
 import json
+import os
 import random
 import subprocess
 from time import time
 from typing import List, Any, Dict
 
-import os
-
 from redbot.core.models import storage
+from redbot.modules import Attack
 from redbot.settings import DEBUG
 
+class NoTargetsError(Exception):
+    pass
 
 def log(text: str, tag: str = "General", style: str = "info"):
     from redbot.web.web import socketio
@@ -25,9 +27,11 @@ def get_log(end: int = -1) -> List[str]:
 def random_targets(req_port: int = 0, pressure: int = 0):
     from redbot.modules.discovery import get_hosts
     targets = get_hosts()
+    if not len(targets):
+        raise NoTargetsError()
     if req_port:
-        targets = [h for h in targets if req_port in h['ports']]
-    return random.sample(targets, pressure or random.randint(1, len(targets)))
+        targets = [h for h in targets if req_port in targets[h]['ports']]
+    return random.sample(list(targets), pressure or random.randint(1, len(targets)))
 
 
 def get_class(cname: str) -> Any:
@@ -114,3 +118,18 @@ def restart_redbot() -> None:
         os.system("touch redbot/web/web.py")
         send_msg('Attempting to restart Flask debugger...')
 
+
+def get_random_attack() -> Attack:
+    from redbot.core.async import modules
+    while True:
+        try:
+            attack = importlib.import_module(random.choice(modules)).cls
+        except (ImportError, AttributeError):
+            pass
+        else:
+            if not attack.exempt:
+                return attack
+
+
+def get_file(filename: str) -> str:
+    return os.path.join('files', filename)

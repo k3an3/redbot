@@ -9,5 +9,5 @@ targets:
 
 modules:
   - discovery
-  - httpweb
-  - ssh
+  - webattack
+  - sshattack

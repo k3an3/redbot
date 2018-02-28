@@ -124,6 +124,7 @@ function init_graph() {
 
 ws.on('nmap progress', function(data) {
     if (data.status == 'PROGRESS') {
+        console.log(data.result);
         scanning = true;
         loading.show();
         loadingbar.attr('style', 'width: ' + data.result.progress + '%');

@@ -1,7 +1,7 @@
 from flask_socketio import emit
 
 from redbot.core.models import modules, storage
-from redbot.core.utils import get_class, log, restart_redbot, set_core_setting
+from redbot.core.utils import get_class, log, restart_redbot, set_core_setting, get_random_attack, NoTargetsError
 from redbot.web.web import socketio, send_msg
 
 
@@ -35,16 +35,31 @@ def settings_ws(data):
 
 @socketio.on('admin')
 def admin_ws(data):
-    if data['command'] == 'restart':
+    command = data['command']
+    if command == 'restart':
         restart_redbot()
-    elif data['command'] == 'clear':
+    elif command == 'clear':
         from redbot.modules.discovery import clear_targets
         clear_targets()
         send_msg("Targets cleared.", "warning")
         log("Targets cleared.", style="warning")
-    elif data['command'] == 'clearlogs':
+    elif command == 'clearlogs':
         storage.delete('log')
         send_msg("Logs cleared.", "warning")
+    elif command == 'testattack':
+        r = get_random_attack()
+        try:
+            r.run_attack()
+        except NoTargetsError:
+            send_msg("There are no hosts to target! Ensure that discovery is properly configured and has been run "
+                     "first.", "danger")
+            log("Test attack {} failed with no hosts to target.".format(r.name), style="danger")
+        except Exception as e:
+            send_msg("Failed running attack module '{}': {}".format(r.name, e), "danger")
+            log("Test attack {} failed with {}".format(r.name, e), style="danger")
+        else:
+            send_msg("Running attack module '{}'".format(r.name), "success")
+            log("Ran test attack.", style="success")
 
 
 @socketio.on('run nmap')

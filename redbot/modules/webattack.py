@@ -48,8 +48,7 @@ class HTTPAttacks(Attack):
     def run_attack(cls):
         attacks = [do_nikto, crawl_site]
         cls.log("Starting HTTP attack.")
-        targets = (random_targets(int(port) for port in cls.get_setting('ports').replace(' ', '').split(',')))
-        attacks = random.choices(attacks, random.randint(1, len(attacks)))
+        targets = (random_targets(int(port)) for port in cls.get_setting('ports').replace(' ', '').split(','))
         g = group(random.choice(attacks).s(target) for target in targets)()
         g.get(on_message=cls.push_update, propagate=False)
         cls.log("Finished HTTP attack.", "success")
@@ -110,5 +109,5 @@ def crawl_site(self, target: str, submit_forms=True):
 
 
 @celery.task(bind=True)
-def do_nikto():
+def do_nikto(self, target: str):
     pass
