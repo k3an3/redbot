@@ -49,7 +49,7 @@ def admin_ws(data):
     elif command == 'testattack':
         r = get_random_attack()
         try:
-            r.run_attack()
+            attack_info = r.run_attack()
         except NoTargetsError:
             send_msg("There are no hosts to target! Ensure that discovery is properly configured and has been run "
                      "first.", "danger")
@@ -59,7 +59,6 @@ def admin_ws(data):
             log("Test attack {} failed with {}".format(r.name, e), style="danger")
         else:
             send_msg("Running attack module '{}'".format(r.name), "success")
-            log("Ran test attack.", style="success")
 
 
 @socketio.on('run nmap')

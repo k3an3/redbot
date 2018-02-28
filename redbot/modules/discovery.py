@@ -89,11 +89,11 @@ class Discovery(Attack):
         socketio.emit('nmap progress', data, broadcast=True)
 
     @classmethod
-    def run_scans(cls) -> None:
+    def run_scans(cls, ondemand: bool = False) -> None:
         storage.set('scan_in_progress', True)
         clear_targets()
         g = group(nmap_scan.s(target) for target in targets)()
-        with allow_join_result():
+        if ondemand:
             g.get(on_message=cls.push_update, propagate=False)
         storage.set('last_nmap_scan', int(time()))
         storage.set('scan_in_progress', False)
@@ -187,7 +187,7 @@ def do_discovery(force: bool = False):
             print("scanning now")
             if not force:
                 Discovery.log("Scheduled discovery scan started.")
-            Discovery.run_scans()
+            Discovery.run_scans(ondemand=force)
         else:
             print("no need to scan")
     if 'iscore' in discovery_type or 'both' in discovery_type:

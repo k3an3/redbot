@@ -1,8 +1,10 @@
 import random
+from typing import List
 
 import requests
 from bs4 import BeautifulSoup
 from celery import group
+from celery.result import GroupResult
 from faker import Faker
 from http_crawler import crawl
 
@@ -45,13 +47,14 @@ class HTTPAttacks(Attack):
             cls.log('Finished HTTP attack on {}"'.format(data['result']['target']), "success")
 
     @classmethod
-    def run_attack(cls):
-        attacks = [do_nikto, crawl_site]
+    def run_attack(cls) -> (GroupResult, List[str]):
+        attacks = [crawl_site]
+        if cls.get_setting('enable_nikto'):
+            attacks.append(run_nikto)
         cls.log("Starting HTTP attack.")
-        targets = (random_targets(int(port)) for port in cls.get_setting('ports').replace(' ', '').split(','))
-        g = group(random.choice(attacks).s(target) for target in targets)()
-        g.get(on_message=cls.push_update, propagate=False)
-        cls.log("Finished HTTP attack.", "success")
+        targets = cls.get_random_targets()
+        group(random.choice(attacks).s(target) for target in targets)()
+        return g, targets
 
 
 cls = HTTPAttacks
@@ -97,17 +100,15 @@ def fill_submit_forms(resp):
             requests.post(url, data=params, cookies=resp.cookies, headers={'User-Agent': fake.user_agent()})
 
 
-@celery.task(bind=True)
-def crawl_site(self, target: str, submit_forms=True):
+@celery.task
+def crawl_site(target: str, submit_forms=True):
     results = crawl(target, follow_external_links=False)
-    self.update_state(state="PROGRESS", meta={'target': target, 'status': 'Completed crawl'})
     if submit_forms:
         for r in results:
             if r.status_code == 200:
                 fill_submit_forms.delay(r.text)
-    self.update_state(state="DONE", meta={'target': target})
 
 
-@celery.task(bind=True)
-def do_nikto(self, target: str):
+@celery.task
+def run_nikto(target: str):
     pass

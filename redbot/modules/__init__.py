@@ -74,3 +74,10 @@ class Attack:
             except (TypeError, ValueError):
                 pass
         return cls.settings
+
+    @classmethod
+    def get_random_targets(cls) -> List[str]:
+        from redbot.core.utils import random_targets
+        targets = []
+        [targets.extend(random_targets(int(port))) for port in cls.get_setting('ports').replace(' ', '').split(',')]
+        return targets

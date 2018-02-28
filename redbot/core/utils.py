@@ -10,8 +10,10 @@ from redbot.core.models import storage
 from redbot.modules import Attack
 from redbot.settings import DEBUG
 
+
 class NoTargetsError(Exception):
     pass
+
 
 def log(text: str, tag: str = "General", style: str = "info"):
     from redbot.web.web import socketio
@@ -47,9 +49,14 @@ def set_up_default_settings() -> Dict:
     print("Applying default settings...")
     settings = {
         'enable_attacks': {
-            'name': 'Enable Attacks',
+            'name': 'Enable Auto-Attack',
             'default': False,
             'description': 'By enabling this, all specified and/or discovered targets will be attacked!'
+        },
+        'attack_spacing': {
+            'name': 'Attack Interval',
+            'default': 10,
+            'description': 'The interval (in seconds) at which attacks should be launched. The minimum is 10 seconds.'
         },
         'auto_scale': {
             'name': 'Enable Auto-Scale',
