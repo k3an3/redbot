@@ -122,15 +122,23 @@ function init_graph() {
     });
 }
 
+var targets = {};
+
 ws.on('nmap progress', function(data) {
     if (data.status == 'PROGRESS') {
-        console.log(data.result);
+        targets[data.result.target] = parseInt(data.result.progress);
         scanning = true;
         loading.show();
-        loadingbar.attr('style', 'width: ' + data.result.progress + '%');
-        $('#target').html("Scanning \"" + data.result.target + "\"");
+        var total = Object.keys(targets).length * 100;
+        var progress = 0;
+        $.each(targets, function(a) {
+            progress += parseInt(targets[a]);
+        });
+        loadingbar.attr('style', 'width: ' + 100 * progress / total + '%');
+        $('#target').html("Scanning \"" + data.result.target + "\", " + (100 * progress / total).toFixed(2) + "% total");
     } else if (data.status == 'RESULTS') {
         data.result.hosts.forEach(graph_host, data.result.target);
+        targets[data.result.target] = 100;
     } else if (data.status == 'SUCCESS') {
     }
 });
