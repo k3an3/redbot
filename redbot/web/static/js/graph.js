@@ -140,7 +140,6 @@ function get_hosts() {
 }
 
 function parse_ports(ports_list) {
-    console.log(ports_list);
     var result = "";
     ports_list.forEach(function(port) {
         if (result != "")

@@ -24,6 +24,7 @@ from typing import Dict
 
 import requests
 from celery import group
+from celery.result import allow_join_result
 from libnmap.parser import NmapParser, NmapParserException
 from libnmap.process import NmapProcess
 
@@ -89,9 +90,13 @@ class Discovery(Attack):
 
     @classmethod
     def run_scans(cls) -> None:
+        storage.set('scan_in_progress', True)
         clear_targets()
         g = group(nmap_scan.s(target) for target in targets)()
-        g.get(on_message=cls.push_update, propagate=False)
+        with allow_join_result():
+            g.get(on_message=cls.push_update, propagate=False)
+        storage.set('last_nmap_scan', int(time()))
+        storage.set('scan_in_progress', False)
         send_msg('Scan finished.')
         socketio.emit('scan finished', {}, broadcast=True)
 
@@ -119,6 +124,7 @@ def dns_lookup(hostname: str) -> str:
 
 
 def update_iscore_targets() -> None:
+    storage.set('last_iscore_update', int(time()))
     r = requests.get(get_url() + 'servicestatus', headers={'Content-Type': 'application/json'}).json()
     hosts = {}
     records = {}
@@ -169,6 +175,11 @@ def get_last_update() -> int:
     return int(storage.get('last_iscore_update') or 0)
 
 
+def scan_in_progress() -> bool:
+    return storage.get('scan_in_progress')
+
+
+@celery.task
 def do_discovery(force: bool = False):
     discovery_type = Discovery.get_setting('discovery_type')
     if 'nmap' in discovery_type or 'both' in discovery_type:
@@ -177,7 +188,6 @@ def do_discovery(force: bool = False):
             if not force:
                 Discovery.log("Scheduled discovery scan started.")
             Discovery.run_scans()
-            storage.set('last_nmap_scan', int(time()))
         else:
             print("no need to scan")
     if 'iscore' in discovery_type or 'both' in discovery_type:
@@ -185,7 +195,6 @@ def do_discovery(force: bool = False):
             if not force:
                 Discovery.log("Scheduled IScorE update started.")
             update_iscore_targets()
-            storage.set('last_iscore_update', int(time()))
 
 
 @celery.task(bind=True)

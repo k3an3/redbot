@@ -7,10 +7,9 @@ Manages the setup for task handling.
 import importlib
 import random
 
-from apscheduler.schedulers.blocking import BlockingScheduler
 from celery import Celery
 
-from redbot.core.configparser import get_modules
+from redbot.core.configparser import get_modules, parse
 from redbot.core.models import modules
 from redbot.core.utils import get_core_setting
 
@@ -22,9 +21,7 @@ celery.conf.update(
 )
 
 
-scheduler = BlockingScheduler()
-
-
+@celery.task
 def run_jobs() -> None:
     while True:
         try:
@@ -38,9 +35,9 @@ def run_jobs() -> None:
         attack.run_attack()
 
 
-def set_up_periodic_tasks() -> None:
-    run_jobs()
-    scheduler.add_job(run_jobs, 'interval', seconds=10)
+@celery.on_after_configure.connect
+def setup_periodic_tasks(sender, **kwargs):
+    parse('config.yml')
+#    sender.add_periodic_task(10, run_jobs.s(), name='Launch attacks')
     from redbot.modules.discovery import do_discovery
-    do_discovery()
-    scheduler.add_job(do_discovery, 'interval', seconds=10)
+    sender.add_periodic_task(10, do_discovery.s(), name='Launch discovery')

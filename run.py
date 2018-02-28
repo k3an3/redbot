@@ -1,5 +1,3 @@
-from redbot.core.async import scheduler, set_up_periodic_tasks
-
 try:
     import eventlet
 
