@@ -62,7 +62,7 @@ def format_setting(module: str, name: str, setting: Dict):
         if 'description' in setting:
             desc = '<small class="form-text text-muted">{}</small>'.format(setting['description'])
         return """<div class="form-group"> <label for="{module}-{setting}">{name}</label> <input class="form-control" 
-        type="text" id="{module}-{setting}" placeholder="{default}" value="{value}">{desc}</div>""".format(
+        type="{type}" id="{module}-{setting}" placeholder="{default}" value="{value}">{desc}</div>""".format(
             module=module,
             setting=name,
             name=setting.get(
@@ -70,6 +70,8 @@ def format_setting(module: str, name: str, setting: Dict):
                 name),
             default=setting[
                 'default'],
-            value=setting.get(
+            value='****************' if 'password' in name.lower() else setting.get(
                 'value') or '',
-            desc=desc)
+            desc=desc,
+            type='password' if 'password' in name.lower() else 'text'
+        )

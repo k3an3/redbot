@@ -1,3 +1,5 @@
+from redbot.core.utils import get_core_settings
+
 try:
     import eventlet
 
@@ -43,4 +45,5 @@ handler.setLevel(logging.INFO)
 handler.setFormatter(logging.Formatter("%(asctime)s: %(message)s"))
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.INFO)
+get_core_settings()
 socketio.run(app, debug=settings.DEBUG)

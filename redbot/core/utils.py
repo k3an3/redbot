@@ -35,11 +35,44 @@ def get_class(cname: str) -> Any:
 
 
 def set_up_default_settings() -> Dict:
+    """
+    Note that in order to update these settings on an existing instance, the Redis key holding the settings must be
+    cleared.
+    :return:
+    """
+    print("Applying default settings...")
     settings = {
         'enable_attacks': {
             'name': 'Enable Attacks',
             'default': False,
             'description': 'By enabling this, all specified and/or discovered targets will be attacked!'
+        },
+        'auto_scale': {
+            'name': 'Enable Auto-Scale',
+            'default': False,
+            'description': 'Automatically deploy VMs to match the scale factor below. Requires vCenter credentials '
+                           'and valid permissions.'
+        },
+        'vcenter_host': {
+            'name': 'vCenter Host',
+            'default': '',
+            'description': 'A valid hostname or IP address for the target vCenter.'
+        },
+        'vcenter_user': {
+            'name': 'vCenter Username',
+            'default': '',
+            'description': 'Valid username for the target vCenter who has permission to create VMs.'
+        },
+        'vcenter_password': {
+            'name': 'vCenter Password',
+            'default': '',
+            'description': 'Valid password for the supplied vCenter user.'
+        },
+        'scale_factor': {
+            'name': 'Scale Factor',
+            'default': 0.5,
+            'description': 'Define the ratio of workers to targets. For example, 100 targets with a scale factor of '
+                           '0.5 will result in 50 workers being deployed. Only takes effect when auto-scale is enabled.'
         },
     }
     set_core_settings(settings)
