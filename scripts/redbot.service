@@ -1,4 +1,4 @@
-Unit]
+[Unit]
 Description=Redbot
 After=network.target
 BindsTo=redbot-celery.service

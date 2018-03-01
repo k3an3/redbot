@@ -11,6 +11,7 @@ class CustomInstallCommand(install):
             path = os.path.dirname(os.path.realpath(__file__))
             for file in os.listdir(os.path.join(path, 'scripts')):
                 copyfile(os.path.join('scripts', file), os.path.join('/etc/systemd/system', file))
+        self.install.run()
 
 
 with open('requirements.txt') as f:

@@ -6,7 +6,8 @@ import subprocess
 from time import time
 from typing import List, Any, Dict
 
-from redbot.core.models import storage
+from redbot.core.configparser import parse
+from redbot.core.models import modules, storage, targets
 from redbot.modules import Attack
 from redbot.settings import DEBUG
 
@@ -140,3 +141,11 @@ def get_random_attack() -> Attack:
 
 def get_file(filename: str) -> str:
     return os.path.join('files', filename)
+
+
+def safe_load_config() -> None:
+    try:
+        parse('config.yml')
+    except FileNotFoundError:
+        modules.extend(storage.lrange('modules', 0, -1))
+        targets.extend(storage.lrange('targets', 0, -1))

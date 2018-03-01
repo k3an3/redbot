@@ -1,5 +1,6 @@
 from flask_socketio import emit
 
+from redbot.core.configparser import parse
 from redbot.core.models import modules, storage
 from redbot.core.utils import get_class, log, restart_redbot, set_core_setting, get_random_attack, NoTargetsError
 from redbot.web.web import socketio, send_msg
@@ -59,6 +60,8 @@ def admin_ws(data):
             log("Test attack {} failed with {}".format(r.name, e), style="danger")
         else:
             send_msg("Running attack module '{}' against {} targets.".format(r.name, len(targets)), "success")
+    elif command == 'reload':
+        parse('config.yml')
 
 
 @socketio.on('run nmap')
