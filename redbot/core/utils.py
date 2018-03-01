@@ -147,5 +147,5 @@ def safe_load_config() -> None:
     try:
         parse('config.yml')
     except FileNotFoundError:
-        modules.extend(storage.lrange('modules', 0, -1))
-        targets.extend(storage.lrange('targets', 0, -1))
+        modules.extend([module.decode() for module in storage.lrange('modules', 0, -1)])
+        targets.extend([json.loads(target) for target in storage.lrange('targets', 0, -1)])
