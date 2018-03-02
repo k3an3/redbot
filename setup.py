@@ -10,8 +10,9 @@ class CustomInstallCommand(install):
         if os.path.isdir('/etc/systemd/system'):
             path = os.path.dirname(os.path.realpath(__file__))
             for file in os.listdir(os.path.join(path, 'scripts')):
-                copyfile(os.path.join('scripts', file), os.path.join('/etc/systemd/system', file))
-        self.install.run()
+                if os.path.isfile(os.path.join('scripts', file)) and file.endswith('.service'):
+                    copyfile(os.path.join('scripts', file), os.path.join('/etc/systemd/system', file))
+        super().run()
 
 
 with open('requirements.txt') as f:

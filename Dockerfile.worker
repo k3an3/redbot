@@ -1,11 +1,13 @@
-FROM debian:buster
+FROM python:3.6-stretch
 
 WORKDIR /redbot
 
-ADD ../../ /redbot
+ADD . /redbot
 
-#RUN echo 'Acquire::http::Proxy "http://apt-cache.iseage.local:3142";' > /etc/apt/apt.conf.d/02proxy && \
-RUN apt update && /redbot/scripts/install_deps.sh /redbot
-RUN cd /redbot && python setup.py install
+RUN echo 'Acquire::http::Proxy "http://172.26.0.15:3142";' > /etc/apt/apt.conf.d/02proxy
+RUN apt-get update && /redbot/scripts/install_deps.sh /redbot
+RUN cd /redbot && python3 setup.py install
+RUN pip3 install -r requirements.txt
+RUN echo "REDIS_HOST = 'redis'" > redbot/settings_local.py
 
-CMD ["/redbot/scripts/start-all.sh"]
+CMD ["/redbot/scripts/start-worker.sh"]

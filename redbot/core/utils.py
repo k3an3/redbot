@@ -105,10 +105,19 @@ def set_up_default_settings() -> Dict:
             'description': 'The name of the resource pool to deploy Redbot workers to. The user must have permission '
                            'to create VMs in this pool. '
         },
+        'build_mode': {
+            'name': 'Worker Build Mode',
+            'default': 'remote',
+            'description': 'Valid options are "remote", "local", or "virtualbox". In order to greatly increase '
+                           'deployment performance, the Redbot worker container can be '
+                           'built locally or within a local Virtualbox machine. The "local" and "virtualbox" settings '
+                           'require a locally running Docker daemon or Virtualbox instance, respectively.'
+        },
         'worker_scale': {
             'name': 'Worker Scale',
             'default': 1,
-            'description': 'Define the number of attack workers for each target.'
+            'description': 'Define the number of attack workers for each target. Will cause the workers to scale '
+                           'appropriately. '
         },
     }
     set_core_settings(settings)
