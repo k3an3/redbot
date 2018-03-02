@@ -1,0 +1,18 @@
+version: '3'
+services:
+  redbot-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+    - "5000:5000"
+    links:
+    - redis
+  redbot-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    links:
+    - redis
+  redis:
+    image: redis

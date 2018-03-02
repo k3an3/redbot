@@ -1,0 +1,11 @@
+FROM debian:buster
+
+WORKDIR /redbot
+
+ADD ../../ /redbot
+
+#RUN echo 'Acquire::http::Proxy "http://apt-cache.iseage.local:3142";' > /etc/apt/apt.conf.d/02proxy && \
+RUN apt update && /redbot/scripts/install_deps.sh /redbot
+RUN cd /redbot && python setup.py install
+
+CMD ["/redbot/scripts/start-all.sh"]

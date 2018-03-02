@@ -1,0 +1,9 @@
+FROM python:3.6
+
+WORKDIR /redbot
+
+ADD . /redbot
+
+RUN python setup.py install
+
+CMD ["python", "redbot-web"]
