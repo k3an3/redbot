@@ -80,11 +80,35 @@ def set_up_default_settings() -> Dict:
             'default': '',
             'description': 'Valid password for the supplied vCenter user.'
         },
-        'scale_factor': {
-            'name': 'Scale Factor',
-            'default': 0.5,
-            'description': 'Define the ratio of workers to targets. For example, 100 targets with a scale factor of '
-                           '0.5 will result in 50 workers being deployed. Only takes effect when auto-scale is enabled.'
+        'vcenter_attack_network': {
+            'name': 'Attack Network',
+            'default': 'RedGreen',
+            'description': 'The network within vCenter where Redbot workers may attack from. The network must serve '
+                           'DHCP, and the default gateway must have routes to the target ranges. The Redbot user must '
+                           'have permission to assign this network. '
+        },
+        'vcenter_mgmt_network': {
+            'name': 'Backplane Network',
+            'default': 'Redbot',
+            'description': 'The network that Redbot nodes will use to communicate with the Redis instance. The Redbot '
+                           'user must have permissions to assign this network. This network must have DHCP. '
+        },
+        'vcenter_deploy_host': {
+            'name': 'Deploy Host(s)',
+            'default': 'CDC/*',
+            'description': 'The name of the host or cluster (e.g. CDC/*) that Redbot workers should be deployed to. '
+                           'The user must have permission to create VMs on the target host or cluster. '
+        },
+        'vcenter_pool': {
+            'name': 'Deploy Pool',
+            'default': 'Redbot',
+            'description': 'The name of the resource pool to deploy Redbot workers to. The user must have permission '
+                           'to create VMs in this pool. '
+        },
+        'worker_scale': {
+            'name': 'Worker Scale',
+            'default': 1,
+            'description': 'Define the number of attack workers for each target.'
         },
     }
     set_core_settings(settings)
