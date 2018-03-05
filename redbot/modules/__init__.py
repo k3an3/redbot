@@ -1,15 +1,25 @@
 import importlib
 import json
 import logging
-from typing import Dict, Any, List
+import random
+from abc import ABC
+from typing import Dict, Any, List, Set, Callable, Iterable, Tuple
+
+from celery import group
+from celery.result import GroupResult
 
 from redbot.core.models import modules, storage
+from redbot.core.utils import set_settings, set_setting, get_settings, get_setting
 
 logger = logging.getLogger('redbot.modules')
 
 
-def get_all_ports() -> List[int]:
-    ports = []
+def get_all_ports() -> Set[int]:
+    """
+    Create a set of all ports used by all installed modules.
+    :return: Unique set of all ports.
+    """
+    ports = set()
     for module in modules:
         try:
             cls = importlib.import_module(module).cls
@@ -18,60 +28,97 @@ def get_all_ports() -> List[int]:
         else:
             if cls:
                 p = cls.get_setting('ports')
-                if p:
-                    ports += p
+                for port in p.replace(' ', '').split(','):
+                    ports.add(int(port))
 
 
-class Attack:
+class Attack(ABC):
+    """
+    The abstract base class for all attack modules. Any attack modules to be used by Redbot must be a subclass of
+    this class, and they must implement at least the run_attack method; others may be overridden optionally.
+    """
     name = None
-    ports = None
     credentials = None
     settings = None
     exempt = False
 
     @classmethod
-    def get_storage_key(cls):
+    def get_storage_key(cls) -> str:
+        """
+        Obtain the Redis key for this class's settings based on its name.
+        :return: The Redis key for this class's settings.
+        """
         return 'settings-' + cls.name
 
     @classmethod
-    def run_attack(cls):
+    def run_attack(cls) -> Tuple[GroupResult, List]:
+        """
+        This method is called by Redbot's job scheduler, and executes the class's main functionality. Code to run the
+        attack (selecting targets, running Celery tasks) should be invoked from here.
+
+        For convenience, once target selection has completed, the attacks, targets, and any options can be passed to
+        attack_all.
+        :return: A tuple containing the GroupResult object, and a list of the targets that are being attacked.
+        """
         raise NotImplemented
 
     @classmethod
-    def push_update(cls):
+    def attack_all(cls, attacks: Iterable[Callable], targets: Iterable[Tuple], *args, **kwargs) -> GroupResult:
+        """
+        A convenience method to execute all supplied attacks against supplied targets in parallel.
+        :param attacks: An iterable of attack callables that should be randomly selected from for each target.
+        :param targets: An iterable of target (host, port) pairs to be attacked.
+        :param args: Optional positional arguments that will be passed to the attack callables.
+        :param kwargs: Optional keyword arguments that will be passed to the attack callables.
+        :return: A Celery GroupResult object containing results of all tasks started here.
+        """
+        return group(random.choice(attacks).s(*target, *args, **kwargs) for target in targets)()
+
+    @classmethod
+    def push_update(cls, data: Dict[str, str]) -> None:
+        """
+        An optional method to receive updates from a Celery task-in-progress. This can be used to update progress
+        information in real time on the front end. The limitation with this is that the task in question must be
+        called from the context of the web application, so it is not useful for scheduled jobs.
+
+        A working implementation can be found in the redbot.modules.discovery module.
+        """
         raise NotImplemented
 
     @classmethod
     def log(cls, text: str, style: str = "info") -> None:
+        """
+        Wrapper for the log utility function, simply adds module name to log call.
+        :param text: The body of the log message.
+        :param style: The CSS class suffix for Bootstrap theming, e.g. info, warning, danger, success, etc.
+        """
         from redbot.core.utils import log
         log(text, cls.name, style)
 
     @classmethod
     def get_setting(cls, key) -> Any:
-        settings = cls.get_settings()
-        return settings[key] if key in settings else cls.settings[key]['default']
+        setting = get_setting(cls.get_storage_key(), key)
+        return setting or cls.settings[key]['default']
 
     @classmethod
     def get_settings(cls) -> Dict:
-        return json.loads(storage.get(cls.get_storage_key()) or "{}")
+        return get_settings(cls.get_storage_key())
 
     @classmethod
-    def set_setting(cls, key: str, value: Any = None):
-        s = cls.get_settings()
-        s[key] = value
-        cls.set_settings(s)
+    def set_setting(cls, key: str, value: Any = None) -> None:
+        set_setting(cls.get_storage_key(), key, value)
 
     @classmethod
     def set_settings(cls, data: Dict) -> None:
-        storage.set(cls.get_storage_key(), json.dumps(data))
+        set_settings(cls.get_storage_key(), data)
 
     @classmethod
     def merge_settings(cls) -> Dict:
         s = cls.get_settings()
         for setting in cls.settings:
             try:
-                cls.settings[setting].update({'value': s.get(setting)})
-            except (TypeError, ValueError):
+                cls.settings[setting].update({'value': s[setting]['value']})
+            except (TypeError, ValueError, KeyError):
                 pass
         return cls.settings
 

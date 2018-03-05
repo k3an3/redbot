@@ -53,7 +53,7 @@ class HTTPAttacks(Attack):
             attacks.append(run_nikto)
         cls.log("Starting HTTP attack.")
         targets = cls.get_random_targets()
-        g = group(random.choice(attacks).s(target) for target in targets)()
+        g = cls.attack_all(targets)
         return g, targets
 
 

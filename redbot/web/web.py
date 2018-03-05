@@ -48,7 +48,7 @@ def msg():
 @app.template_filter('format_setting')
 def format_setting(module: str, name: str, setting: Dict):
     desc = ''
-    if type(setting.get('value', setting['default'])) == bool or type(setting['default']) == bool:
+    if type(setting.get('default')) == str and setting['default'].lower() in ['true', 'false']:
         if 'description' in setting:
             desc = '<small class="form-text text-muted">{}</small>'.format(setting['description'])
         return """<div class="form-check">

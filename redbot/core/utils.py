@@ -8,8 +8,9 @@ from typing import List, Any, Dict
 
 from redbot.core.configparser import parse
 from redbot.core.models import modules, storage, targets
-from redbot.modules import Attack
 from redbot.settings import DEBUG
+
+BASE = 'settings-redbot.core'
 
 
 class NoTargetsError(Exception):
@@ -123,31 +124,46 @@ def set_up_default_settings() -> Dict:
     set_core_settings(settings)
 
 
+def set_settings(key_prefix: str, data: Dict[str, Any]) -> None:
+    for key, value in data.items():
+        storage.hmset(key_prefix + ':' + key, value)
+        storage.sadd(key_prefix, key)
+
+
+def set_setting(key_prefix: str, key: str, value: Any = None) -> None:
+    storage.hmset(key_prefix + ':' + key, {'value': value})
+    storage.sadd(key_prefix, key)
+
+
+def get_settings(key_prefix: str) -> Dict[str, Any]:
+    settings = {}
+    for s in storage.smembers(key_prefix):
+        settings[s] = storage.hgetall(key_prefix + ':' + s)
+    return settings
+
+
+def get_setting(key_prefix: str, key: str) -> Any:
+    stored = storage.hgetall(key_prefix + key)
+    return stored.get('value', stored['default'])
+
+
 def get_core_settings() -> Dict:
-    settings = json.loads(storage.get('settings-redbot.core') or '{}')
+    settings = get_settings(BASE)
     if not settings:
         settings = set_up_default_settings()
     return settings
 
 
 def get_core_setting(key) -> Any:
-    settings = get_core_settings()
-    setting = None
-    try:
-        setting = getattr(importlib.import_module('redbot.settings'), key.upper())
-    except (ImportError, AttributeError):
-        pass
-    return settings[key].get('value', settings[key]['default']) if key in settings else setting
+    return get_setting(BASE, key)
 
 
 def set_core_settings(data: Dict) -> None:
-    storage.set('settings-redbot.core', json.dumps(data))
+    set_settings(BASE, data)
 
 
-def set_core_setting(key: str, value: Any = None):
-    s = get_core_settings()
-    s[key]['value'] = value
-    set_core_settings(s)
+def set_core_setting(key: str, value: Any = None) -> None:
+    set_setting(BASE, key, value)
 
 
 def restart_redbot() -> None:
@@ -160,7 +176,7 @@ def restart_redbot() -> None:
         send_msg('Attempting to restart Flask debugger...')
 
 
-def get_random_attack() -> Attack:
+def get_random_attack() -> Any:
     from redbot.core.async import modules
     while True:
         try:
