@@ -17,7 +17,14 @@ class NoTargetsError(Exception):
     pass
 
 
-def log(text: str, tag: str = "General", style: str = "info"):
+def log(text: str, tag: str = "General", style: str = "info") -> None:
+    """
+    Write log data to storage.
+
+    :param text: The log body.
+    :param tag: The tag for the log entry; i.e. which module is logging.
+    :param style: The Bootstrap CSS class suffix for this entry.
+    """
     from redbot.web.web import socketio
     entry = {'tag': tag, 'style': style, 'time': int(time()), 'text': text}
     socketio.emit('logs', {'entries': [entry]})
@@ -25,28 +32,46 @@ def log(text: str, tag: str = "General", style: str = "info"):
 
 
 def get_log(end: int = -1) -> List[str]:
+    """
+    Return log entries for the given length.
+
+    :param end: How many entries to retrieve.
+    :return: A list of log entries.
+    """
     return [json.loads(_) for _ in storage.lrange('log', 0, end)]
 
 
 def random_targets(req_port: int = 0, pressure: int = 0):
+    """
+    Given a port number, find hosts that have this port open and return a random subset of these hosts.
+
+    :param req_port: Port number that selected hosts should have open.
+    :param pressure: Not developed yet.
+    :return: A random sample of hosts.
+    """
     from redbot.modules.discovery import get_hosts
-    targets = get_hosts()
-    if not len(targets):
+    hosts = get_hosts()
+    if not len(hosts):
         raise NoTargetsError()
     if req_port:
-        targets = [(h, req_port) for h in targets if req_port in targets[h]['ports']]
-    return random.sample(list(targets), pressure or random.randint(1, len(targets)))
+        hosts = [(h, req_port) for h in hosts if req_port in hosts[h]['ports']]
+    return random.sample(list(hosts), pressure or random.randint(1, len(hosts)))
 
 
-def get_class(cname: str) -> Any:
-    return importlib.import_module(cname).cls
+def get_class(module_name: str) -> Any:
+    """
+    Given the name of a module, this function will import the module and return the object "cls".
+
+    :param module_name: Module containing the target class.
+    :return: The "cls" class from the specified module.
+    """
+    return importlib.import_module(module_name).cls
 
 
-def set_up_default_settings() -> Dict:
+def set_up_default_settings() -> None:
     """
     Note that in order to update these settings on an existing instance, the Redis key holding the settings must be
     cleared.
-    :return:
     """
     print("Applying default settings...")
     settings = {
@@ -144,7 +169,7 @@ def get_settings(key_prefix: str) -> Dict[str, Any]:
 
 def get_setting(key_prefix: str, key: str) -> Any:
     stored = storage.hgetall(key_prefix + key)
-    return stored.get('value', stored['default'])
+    return stored.get('value', stored.get('default'))
 
 
 def get_core_settings() -> Dict:

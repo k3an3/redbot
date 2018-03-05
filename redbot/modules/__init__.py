@@ -17,6 +17,7 @@ logger = logging.getLogger('redbot.modules')
 def get_all_ports() -> Set[int]:
     """
     Create a set of all ports used by all installed modules.
+
     :return: Unique set of all ports.
     """
     ports = set()
@@ -46,6 +47,7 @@ class Attack(ABC):
     def get_storage_key(cls) -> str:
         """
         Obtain the Redis key for this class's settings based on its name.
+
         :return: The Redis key for this class's settings.
         """
         return 'settings-' + cls.name
@@ -58,6 +60,7 @@ class Attack(ABC):
 
         For convenience, once target selection has completed, the attacks, targets, and any options can be passed to
         attack_all.
+
         :return: A tuple containing the GroupResult object, and a list of the targets that are being attacked.
         """
         raise NotImplemented
@@ -66,6 +69,7 @@ class Attack(ABC):
     def attack_all(cls, attacks: Iterable[Callable], targets: Iterable[Tuple], *args, **kwargs) -> GroupResult:
         """
         A convenience method to execute all supplied attacks against supplied targets in parallel.
+
         :param attacks: An iterable of attack callables that should be randomly selected from for each target.
         :param targets: An iterable of target (host, port) pairs to be attacked.
         :param args: Optional positional arguments that will be passed to the attack callables.
@@ -82,6 +86,8 @@ class Attack(ABC):
         called from the context of the web application, so it is not useful for scheduled jobs.
 
         A working implementation can be found in the redbot.modules.discovery module.
+
+        :param data: Dictionary of status and results provided by Celery.
         """
         raise NotImplemented
 
@@ -89,6 +95,7 @@ class Attack(ABC):
     def log(cls, text: str, style: str = "info") -> None:
         """
         Wrapper for the log utility function, simply adds module name to log call.
+
         :param text: The body of the log message.
         :param style: The CSS class suffix for Bootstrap theming, e.g. info, warning, danger, success, etc.
         """
@@ -97,23 +104,50 @@ class Attack(ABC):
 
     @classmethod
     def get_setting(cls, key) -> Any:
+        """
+        Wrapper for utils get_setting.
+
+        :param key: Setting key to retrieve.
+        :return: Fetched setting value.
+        """
         setting = get_setting(cls.get_storage_key(), key)
         return setting or cls.settings[key]['default']
 
     @classmethod
     def get_settings(cls) -> Dict:
+        """
+        Wrapper for utils get_settings.
+
+        :return: Dictionary of all settings for this class.
+        """
         return get_settings(cls.get_storage_key())
 
     @classmethod
     def set_setting(cls, key: str, value: Any = None) -> None:
+        """
+        Wrapper for utils get_settings.
+
+        :param key: Setting key to write.
+        :param value:  Setting value to write.
+        """
         set_setting(cls.get_storage_key(), key, value)
 
     @classmethod
     def set_settings(cls, data: Dict) -> None:
+        """
+        Wrapper for utils get_settings.
+
+        :param data: Dictionary data to update this class's settings with.
+        """
         set_settings(cls.get_storage_key(), data)
 
     @classmethod
     def merge_settings(cls) -> Dict:
+        """
+        Merge settings from Redis and those stored in the class.
+
+        :return: A dictionary of the merged settings.
+        """
         s = cls.get_settings()
         for setting in cls.settings:
             try:
@@ -123,7 +157,13 @@ class Attack(ABC):
         return cls.settings
 
     @classmethod
-    def get_random_targets(cls) -> List[str]:
+    def get_random_targets(cls) -> List[Tuple[str, int]]:
+        """
+        Convenience method that will create a list of targets based on the specified ports supported or configured
+        for this class.
+
+        :return: A list of target tuples matching the allowed ports.
+        """
         from redbot.core.utils import random_targets
         targets = []
         [targets.extend(random_targets(int(port))) for port in cls.get_setting('ports').replace(' ', '').split(',')]
