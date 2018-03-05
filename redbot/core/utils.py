@@ -198,3 +198,5 @@ def safe_load_config() -> None:
     except FileNotFoundError:
         modules.extend([module.decode() for module in storage.lrange('modules', 0, -1)])
         targets.extend([json.loads(target) for target in storage.lrange('targets', 0, -1)])
+        if not modules or not targets:
+            raise Exception("Couldn't load modules and/or targets from Redis.")

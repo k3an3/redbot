@@ -24,7 +24,6 @@ from typing import Dict
 
 import requests
 from celery import group
-from celery.result import allow_join_result
 from libnmap.parser import NmapParser, NmapParserException
 from libnmap.process import NmapProcess
 
@@ -44,12 +43,12 @@ class Discovery(Attack):
         'scan_options': {
             'name': 'Scan Options',
             'default': '-sT -n -T5',
-            'description': 'Accepts any nmap command-line flags'
+            'description': 'Accepts any nmap command-line flags.'
         },
         'ports': {
             'name': 'Target Ports',
             'default': ",".join((str(n) for n in (21, 22, 23, 80, 443))),
-            'description': 'Comma-separated TCP ports to scan'
+            'description': 'Comma-separated TCP ports to scan.'
         },
         'scan_interval': {
             'name': 'Scan Interval',

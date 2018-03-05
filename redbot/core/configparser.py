@@ -16,6 +16,7 @@ def parse(filename: str) -> None:
     for target in y['targets']:
         targets.append(target)
         storage.lpush('targets', json.dumps(target))
+    modules.append('redbot.modules.discovery')
     for module in y['modules']:
         module_name = 'redbot.modules.' + module
         modules.append(module_name)
@@ -27,7 +28,7 @@ def parse(filename: str) -> None:
 
 
 def get_modules(filename: str) -> List[str]:
-    m = []
+    m = ['redbot.modules.discovery']
     with open(filename) as f:
         y = yaml.load(f)
     for module in y['modules']:

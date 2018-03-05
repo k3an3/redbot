@@ -27,7 +27,7 @@ def run_jobs() -> None:
 
 
 @celery.on_after_configure.connect
-def setup_periodic_tasks(sender, **kwargs):
+def set_up_periodic_tasks(sender, **kwargs):
     if not modules:
         safe_load_config()
     sender.add_periodic_task(10, run_jobs.s(), name='Launch attacks')
