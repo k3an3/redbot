@@ -195,7 +195,7 @@ def get_settings(key_prefix: str) -> Dict[str, Any]:
 
 
 def get_setting(key_prefix: str, key: str) -> Any:
-    stored = storage.hgetall(key_prefix + key)
+    stored = storage.hgetall(key_prefix + ":" + key)
     return stored.get('value', stored.get('default'))
 
 
@@ -248,7 +248,7 @@ def safe_load_config() -> None:
     try:
         parse('config.yml')
     except FileNotFoundError:
-        modules.extend([module.decode() for module in storage.lrange('modules', 0, -1)])
+        modules.extend([module for module in storage.lrange('modules', 0, -1)])
         targets.extend([json.loads(target) for target in storage.lrange('targets', 0, -1)])
         if not modules or not targets:
             raise Exception("Couldn't load modules and/or targets from Redis.")

