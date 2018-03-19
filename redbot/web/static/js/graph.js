@@ -67,7 +67,7 @@ function graph_host(host, target) {
         cy.add({
             group: "nodes",
             data: {
-                id: host[0] + b,
+                id: host[0] + b.port,
                 parent: host[0]
             },
             style: {
@@ -75,7 +75,7 @@ function graph_host(host, target) {
                 'height': 20,
                 'background-color': 'white',
                 'color': 'white',
-                'label': b,
+                'label': b.port,
             }
         });
     });
@@ -154,7 +154,7 @@ function parse_ports(ports_list) {
     ports_list.forEach(function(port) {
         if (result != "")
             result += ", ";
-        result += port;
+        result += port.port;
     });
     return result;
 }

@@ -42,13 +42,13 @@ class Discovery(Attack):
     settings = {
         'scan_options': {
             'name': 'Scan Options',
-            'default': '-sT -n -T5',
+            'default': '-n -T5 -sV',
             'description': 'Accepts any nmap command-line flags.'
         },
         'ports': {
             'name': 'Target Ports',
             'default': ",".join((str(n) for n in (21, 22, 23, 80, 443))),
-            'description': 'Comma-separated TCP ports to scan.'
+            'description': 'Comma-separated TCP ports or port ranges to scan. - for all ports.'
         },
         'scan_interval': {
             'name': 'Scan Interval',
@@ -209,6 +209,7 @@ def nmap_scan(self, target: Dict[str, str]) -> None:
         report = NmapParser.parse(nm.stdout)
     except NmapParserException as e:
         print(e)
-    h = [(host.address, [p[0] for p in host.get_open_ports()]) for host in report.hosts if host.is_up()]
+    h = [(host.address, [host.get_service(*p).get_dict() for p in host.get_open_ports()])
+         for host in report.hosts if host.is_up()]
     self.update_state(state="RESULTS", meta={'hosts': h,
                                              'target': target['name']})

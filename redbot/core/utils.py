@@ -14,6 +14,9 @@ BASE = 'settings-redbot.core'
 
 
 class NoTargetsError(Exception):
+    """
+    Exception thrown when an attack is run but no targets have been discovered yet.
+    """
     pass
 
 
@@ -41,6 +44,13 @@ def get_log(end: int = -1) -> List[str]:
     return [json.loads(_) for _ in storage.lrange('log', 0, end)]
 
 
+def host_has_port(host, port) -> bool:
+    for p in host['ports']:
+        if int(p['port']) == port:
+            return True
+    return False
+
+
 def random_targets(req_port: int = 0, pressure: int = 0):
     """
     Given a port number, find hosts that have this port open and return a random subset of these hosts.
@@ -54,7 +64,7 @@ def random_targets(req_port: int = 0, pressure: int = 0):
     if not len(hosts):
         raise NoTargetsError()
     if req_port:
-        hosts = [(h, req_port) for h in hosts if req_port in hosts[h]['ports']]
+        hosts = [(h, req_port) for h in hosts if host_has_port(hosts[h], req_port)]
     return random.sample(list(hosts), pressure or random.randint(1, len(hosts)))
 
 
@@ -68,7 +78,7 @@ def get_class(module_name: str) -> Any:
     return importlib.import_module(module_name).cls
 
 
-def set_up_default_settings() -> None:
+def set_up_default_settings() -> Dict[str, Dict]:
     """
     Note that in order to update these settings on an existing instance, the Redis key holding the settings must be
     cleared.
@@ -147,20 +157,37 @@ def set_up_default_settings() -> None:
         },
     }
     set_core_settings(settings)
+    return settings
 
 
 def set_settings(key_prefix: str, data: Dict[str, Any]) -> None:
+    """
+    Low-level handler to write settings to Redis.
+    :param key_prefix: The string key for this module's settings.
+    :param data: A dictionary of settings to write.
+    """
     for key, value in data.items():
         storage.hmset(key_prefix + ':' + key, value)
         storage.sadd(key_prefix, key)
 
 
 def set_setting(key_prefix: str, key: str, value: Any = None) -> None:
+    """
+    Low-level handler to write a setting to Redis.
+    :param key_prefix: The string key for this module's settings.
+    :param key: The key where the data should be stored.
+    :param value: The value of the data to be stored.
+    """
     storage.hmset(key_prefix + ':' + key, {'value': value})
     storage.sadd(key_prefix, key)
 
 
 def get_settings(key_prefix: str) -> Dict[str, Any]:
+    """
+    Low-level handler to read a setting
+    :param key_prefix:
+    :return:
+    """
     settings = {}
     for s in storage.smembers(key_prefix):
         settings[s] = storage.hgetall(key_prefix + ':' + s)

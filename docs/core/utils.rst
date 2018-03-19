@@ -1,7 +1,7 @@
 =====
 Utils
 =====
-This is the abstract base class that all attacks must inherit.
+Helper functions for the core of the application.
 
 .. automodule:: redbot.core.utils
    :members:

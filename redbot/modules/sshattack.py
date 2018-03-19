@@ -22,13 +22,13 @@ class SSHAttack(Attack):
             'name': 'User List',
             'default': 'users.txt',
             'description': 'Path to a wordlist containing one username per line. Accepts file paths within the '
-                           'RedBot "files" directory, or a valid HTTP(S) URL.'
+                           'RedBot "files" directory.'
         },
         'passlist': {
             'name': 'Password List',
             'default': 'pass.txt',
             'description': 'Path to a wordlist containing one username per line. Accepts file paths within the '
-                           'RedBot "files" directory, or a valid HTTP(S) URL.'
+                           'RedBot "files" directory.'
         },
         'command': {
             'name': 'SSH Command',

@@ -21,13 +21,22 @@ celery.conf.update(
 
 @celery.task
 def run_jobs() -> None:
+    """
+    Chooses a random attack and executes it.
+    """
     attack = get_random_attack()
     if get_core_setting('attacks_enabled'):
         attack.run_attack()
 
 
 @celery.on_after_configure.connect
-def set_up_periodic_tasks(sender, **kwargs):
+def set_up_periodic_tasks(sender: Celery, **kwargs) -> None:
+    """
+    Configured scheduled tasks. Both discovery and attack jobs run every 10 seconds, but further code may choose
+    whether or not to execute something at this point. This method shouldn't be called except by Celery itself.
+    :param sender: Celery instance
+    :param kwargs: Optional values
+    """
     if not modules:
         safe_load_config()
     sender.add_periodic_task(10, run_jobs.s(), name='Launch attacks')

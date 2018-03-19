@@ -11,4 +11,5 @@ paramiko
 python-libnmap
 redis
 requests
+git+git://github.com/wumb0/pymetasploit#egg=pymetasploit
 pyyaml

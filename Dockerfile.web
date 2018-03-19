@@ -6,6 +6,6 @@ ADD . /redbot
 
 RUN python setup.py install
 RUN pip3 install -r requirements.txt
-RUN echo "REDIS_HOST = 'redis'" > redbot/settings_local.py
+RUN echo "REDIS_HOST = 'redis'; HOST = '0.0.0.0'" > redbot/settings_local.py
 
 CMD ["python", "redbot-web"]
