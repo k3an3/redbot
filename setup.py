@@ -16,13 +16,15 @@ class CustomInstallCommand(install):
 
 
 with open('requirements.txt') as f:
-    required = f.read().splitlines()
+    required = [line for line in f.read().splitlines() if not line.startswith('git')]
+    gitdeps = [line for line in f.read().splitlines() if line.startswith('git')]
 
 setup(
     name='redbot',
     version='0.0.1',
     packages=find_packages(),
     install_requires=required,
+    dependency_links=gitdeps,
     url='',
     license='MIT',
     author="Keane O'Kelley",
