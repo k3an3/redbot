@@ -44,6 +44,8 @@ def admin_ws(data):
         clear_targets()
         send_msg("Targets cleared.", "warning")
         log("Targets cleared.", style="warning")
+        for key in storage.smembers('notes'):
+            storage.delete('notes:' + key)
     elif command == 'clearlogs':
         storage.delete('log')
         send_msg("Logs cleared.", "warning")
@@ -79,8 +81,10 @@ def nmap():
 def get_hosts_ws(data):
     from redbot.modules.discovery import get_last_scan, get_last_update, get_hosts
     last_scan = max(get_last_scan(), get_last_update())
-    notes = {host: storage.smembers('notes:' + host) for host in storage.smembers('notes')}
+    notes = {host: list(storage.smembers('notes:' + host)) for host in storage.smembers('notes')}
+    result = {'scantime': last_scan, 'notes': notes}
     if data['scantime'] < last_scan:
-        emit('hosts', {'data': get_hosts(), 'scantime': last_scan})
+        result['data'] = get_hosts()
     else:
-        emit('hosts', {'data': None, 'scantime': last_scan, 'notes': notes})
+        result['data'] = None
+    emit('hosts', result)

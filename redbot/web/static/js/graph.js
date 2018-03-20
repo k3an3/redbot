@@ -39,9 +39,11 @@ $('#fit').click(function() {
 
 ws.on('hosts', function(data) {
     update_scantime(data.scantime);
-    if (data.notes != null) {
-
-    }
+    $.each(data.notes, function(host, notes) {
+        console.log(host);
+        console.log(host.replace(/\./g, '\\.'));
+        $('#notes-' + host.replace(/\./g, '\\.')).text(notes);
+    });
     if (data.data == null)
         return;
     cy.destroy();
@@ -50,7 +52,7 @@ ws.on('hosts', function(data) {
     table.empty();
     $.each(data.data, function(host, data) {
         graph_host([host, data.ports], data.target);
-        table.append('<tr id="tr-' + host +'"><td>' + data.target + '</td><td>' + host + '</td><td>' + parse_ports(data.ports) + '</td><td></td></tr>');
+        table.append('<tr><td>' + data.target + '</td><td>' + host + '</td><td>' + parse_ports(data.ports) + '</td><td id="notes-' + host + '"></td></tr>');
     });
 });
 

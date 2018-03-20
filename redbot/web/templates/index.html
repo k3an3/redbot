@@ -11,7 +11,7 @@
                         <a class="nav-link" href="#hosts">Hosts</a>
                     </li>
                 </ul>
-                    {#
+                {#
                     <li class="nav-item">
                         <a class="nav-link" href="#">Analytics</a>
                     </li>
@@ -52,6 +52,9 @@
             <main role="main" id="main" class="col-sm-9 ml-sm-auto col-md-10 pt-3">
                 <div class="alert" role="alert" id="messages">
                 </div>
+                <div class="slidecontainer">
+                    <input type="range" min="1" max="100" value="50" class="slider" id="aggressiveness">
+                </div>
                 <h1>Scan Graph</h1>
 
                 <span id="target"></span>
@@ -67,12 +70,12 @@
                     <div class="table-responsive">
                         <table id="hosts" class="table table-striped">
                             <thead>
-                                <tr>
-                                    <th>Target</th>
-                                    <th>IP Address</th>
-                                    <th>Services</th>
-                                    <th>Notes</th>
-                                </tr>
+                            <tr>
+                                <th>Target</th>
+                                <th>IP Address</th>
+                                <th>Services</th>
+                                <th>Notes</th>
+                            </tr>
                             </thead>
                             <tbody>
                             </tbody>
