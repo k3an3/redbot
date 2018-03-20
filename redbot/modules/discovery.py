@@ -200,7 +200,7 @@ def do_discovery(force: bool = False):
 
 @celery.task(bind=True)
 def nmap_scan(self, target: Dict[str, str]) -> None:
-    options = Discovery.get_setting('scan_options') + " " + Discovery.get_setting('ports')
+    options = Discovery.get_setting('scan_options') + " -p" + Discovery.get_setting('ports')
     nm = NmapProcess(target['range'], options=options)
     nm.run_background()
     while nm.is_running():
