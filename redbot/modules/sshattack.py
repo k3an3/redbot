@@ -6,8 +6,10 @@ from celery import group
 from celery.result import GroupResult
 
 from redbot.core.async import celery
+from redbot.core.models import storage
 from redbot.core.utils import get_file
 from redbot.modules import Attack
+from redbot.modules.discovery import update_hosts
 
 
 class SSHAttack(Attack):
@@ -87,5 +89,7 @@ def ssh_brute_force(host: str, port: int = 22, users: List[str] = [], passwords:
             else:
                 cls.log("SSH successful login to {} with username: '{}', password: '{}'".format(host, user, password),
                         "success")
+                storage.sadd('notes', host)
+                storage.sadd('notes:' + host, 'Creds: {}:{}'.format(user, password))
                 return
     cls.log("SSH brute force on '{}' completed, no result.".format(host), "info")

@@ -141,7 +141,8 @@ def update_iscore_targets() -> None:
         hostn = records.get(host['service_url'], host['service_url'])
         if not hosts.get(hostn):
             hosts[hostn] = {'ports': [],
-                            'target': "Team " + str(host['team_number'])
+                            'target': "Team " + str(host['team_number']),
+                            'notes': [],
                             }
         if not hosts[hostn].get('hostname'):
             hosts[hostn]['hostname'] = host['service_url']
@@ -161,6 +162,7 @@ def update_hosts(hosts) -> None:
     for host in hosts:
         if host in current_hosts:
             current_hosts[host]['ports'] = list(set(hosts[host]['ports'] + current_hosts[host]['ports']))
+            current_hosts[host]['notes'].append(host['notes'])
         else:
             current_hosts[host] = hosts[host]
     storage.set('hosts', json.dumps(current_hosts))

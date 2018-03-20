@@ -79,7 +79,8 @@ def nmap():
 def get_hosts_ws(data):
     from redbot.modules.discovery import get_last_scan, get_last_update, get_hosts
     last_scan = max(get_last_scan(), get_last_update())
+    notes = {host: storage.smembers('notes:' + host) for host in storage.smembers('notes')}
     if data['scantime'] < last_scan:
         emit('hosts', {'data': get_hosts(), 'scantime': last_scan})
     else:
-        emit('hosts', {'data': None, 'scantime': last_scan})
+        emit('hosts', {'data': None, 'scantime': last_scan, 'notes': notes})
