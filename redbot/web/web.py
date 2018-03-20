@@ -19,11 +19,11 @@ def index():
 
 @app.route('/settings')
 def settings():
-    module_settings = [('redbot.core', get_core_settings())]
+    module_settings = [('redbot.core', get_core_settings(), None, False)]
     for module in modules:
         try:
             cls = get_class(module)
-            module_settings.append((module, cls.merge_settings()))
+            module_settings.append((module, cls.merge_settings(), cls.notes, cls.test))
         except (AttributeError, ImportError) as e:
             raise e
     return render_template('settings.html', modules=module_settings)
@@ -48,7 +48,7 @@ def msg():
 @app.template_filter('format_setting')
 def format_setting(module: str, name: str, setting: Dict):
     desc = ''
-    if type(setting.get('default')) == str and setting['default'].lower() in ['true', 'false']:
+    if type(setting.get('default')) == bool or type(setting.get('default')) == str and setting['default'].lower() in ['true', 'false']:
         if 'description' in setting:
             desc = '<small class="form-text text-muted">{}</small>'.format(setting['description'])
         return """<div class="form-check">

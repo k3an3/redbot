@@ -15,6 +15,13 @@ $('.form-check-input').change(function() {
     update_setting($(this), this.checked);
 });
 
+$('.testattack').click(function() {
+    ws.emit('admin', {
+        command: 'testattack',
+        attack: $(this).attr('id').split('-')[1]
+    });
+});
+
 $('#redbot button').click(function() {
     ws.emit('admin', {
         command: $(this).attr('id')

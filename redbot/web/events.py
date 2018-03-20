@@ -48,7 +48,10 @@ def admin_ws(data):
         storage.delete('log')
         send_msg("Logs cleared.", "warning")
     elif command == 'testattack':
-        r = get_random_attack()
+        if data.get('attack'):
+            r = get_class(data['attack'])
+        else:
+            r = get_random_attack()
         try:
             result, targets = r.run_attack()
         except NoTargetsError:

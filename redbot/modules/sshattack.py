@@ -40,11 +40,11 @@ class SSHAttack(Attack):
 
     @classmethod
     def run_attack(cls) -> (GroupResult, List[str]):
-        cls.log("Starting SSH attack.")
         with open(get_file(cls.get_setting('userlist'))) as ul, open(get_file(cls.get_setting('passlist'))) as pl:
             users = ul.readlines()
             passwords = pl.readlines()
         targets = cls.get_random_targets()
+        cls.log("Starting SSH attack on " + str(targets))
         g = cls.attack_all(attacks=(ssh_brute_force,), targets=targets, users=users, passwords=passwords)
         return g, targets
 

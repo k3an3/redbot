@@ -4,6 +4,7 @@ from typing import List
 from metasploit.msfrpc import MsfRpcClient
 
 from redbot.core.async import celery
+from redbot.core.models import storage
 from redbot.core.utils import random_targets
 from redbot.modules import Attack
 from redbot.modules.discovery import get_hosts
@@ -11,13 +12,8 @@ from redbot.modules.discovery import get_hosts
 
 class MSF(Attack):
     name = 'metasploit'
+    notes = "Requires a running msfrpcd daemon, and nmap scans run with -sV."
     settings = {
-        'enable_msf': {
-            'name': 'Enable Metasploit',
-            'default': False,
-            'description': "Whether to enable the Metasploit functions. Metasploit must be installed and msfrpcd must "
-                           "be running. Requires nmap scans with -sV."
-        },
         'password': {
             'name': 'msfrpcd Password',
             'default': '',
@@ -32,8 +28,8 @@ class MSF(Attack):
 
     @classmethod
     def run_attack(cls):
-        cls.log("Starting MSF attack.")
         targets = random_targets()
+        cls.log("Starting MSF attack on " + str(targets))
         g = cls.attack_all(attacks=(msf_attack,), targets=targets)
         return g, targets
 
@@ -52,13 +48,17 @@ def _slow_msf_search(client: MsfRpcClient, query: str):
 
 
 def msf_search(client: MsfRpcClient, query: str) -> List[str]:
-    # TODO unhack
-    return ['linux/http/ddwrt_cgibin_exec']
-    return _slow_msf_search(client, query)
+    cached = storage.smembers('metasploit:' + query)
+    if not cached:
+        results = _slow_msf_search(client, query)
+        for result in results:
+            storage.sadd('metasploit:' + query, result)
+        return results
+    return cached
 
 
 @celery.task
-def msf_attack(host: str):
+def msf_attack(host: str, *args, **kwargs):
     client = MsfRpcClient(MSF.get_setting('password'))
     host = get_hosts()[host]
     query = ""
@@ -73,4 +73,3 @@ def msf_attack(host: str):
     exploit['RPORT'.encode()] = port
     # TODO: Payloads?
     print(exploit.execute())
-    client.jobs.list()

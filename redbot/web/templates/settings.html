@@ -7,7 +7,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#redbot">redbot<span class="sr-only">(current)</span></a>
                     </li>
-                    {% for module, _ in modules %}
+                    {% for module, _, _, _ in modules %}
                         <li class="nav-item">
                             <a class="nav-link" href="#{{ module }}">{{ module }}<span class="sr-only">(current)</span></a>
                         </li>
@@ -30,9 +30,17 @@
                     <button class="btn btn-warning" id="testattack">Run Random Attack</button>
                     <button class="btn btn-info" id="reload">Reload config.yml</button>
                 </div>
-                {% for module, settings in modules %}
+                {% for module, settings, notes, test in modules %}
                     <div id="{{ module }}">
                         <h2>{{ module }}</h2>
+                    {% if notes %}
+                        <span class="text-muted">{{ notes }}</span>
+                        <br>
+                        <br>
+                    {% endif %}
+                    {% if test %}
+                        <button class="btn btn-warning testattack" id="test-{{ module }}">Run Test Attack</button>
+                    {% endif %}
                         <form>
                             {% for setting in settings %}
                                 {{ module|format_setting(setting, settings[setting])|safe }}

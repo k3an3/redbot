@@ -51,12 +51,11 @@ def host_has_port(host, port) -> bool:
     return False
 
 
-def random_targets(req_port: int = 0, pressure: int = 0):
+def random_targets(req_port: int = 0):
     """
     Given a port number, find hosts that have this port open and return a random subset of these hosts.
 
     :param req_port: Port number that selected hosts should have open.
-    :param pressure: Not developed yet.
     :return: A random sample of hosts.
     """
     from redbot.modules.discovery import get_hosts
@@ -64,8 +63,8 @@ def random_targets(req_port: int = 0, pressure: int = 0):
     if not len(hosts):
         raise NoTargetsError()
     if req_port:
-        hosts = [(h, req_port) for h in hosts if host_has_port(hosts[h], req_port)]
-    return random.sample(list(hosts), pressure or random.randint(1, len(hosts)))
+        hosts = [h for h in hosts if host_has_port(hosts[h], req_port)]
+    return [(h, req_port) for h in random.sample(list(hosts), random.randint(1, len(hosts)))]
 
 
 def get_class(module_name: str) -> Any:
@@ -232,7 +231,7 @@ def get_random_attack() -> Any:
     from redbot.core.async import modules
     while True:
         try:
-            attack = importlib.import_module(random.choice(modules)).cls
+            attack = get_class(random.choice(modules))
         except (ImportError, AttributeError):
             pass
         else:

@@ -42,6 +42,8 @@ class Attack(ABC):
     credentials = None
     settings = None
     exempt = False
+    notes = ""
+    test = True
 
     @classmethod
     def get_storage_key(cls) -> str:

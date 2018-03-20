@@ -38,6 +38,7 @@ from redbot.web.web import socketio, send_msg
 class Discovery(Attack):
     name = "discovery"
     exempt = True
+    test = False
 
     settings = {
         'scan_options': {
@@ -109,7 +110,6 @@ def get_url() -> str:
 
 def clear_targets() -> None:
     storage.delete('hosts')
-    storage.delete('targets')
     storage.set('last_nmap_scan', 0)
     storage.set('last_iscore_update', 0)
 

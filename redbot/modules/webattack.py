@@ -1,12 +1,11 @@
-import random
 from typing import List, Tuple
 
 import requests
 from bs4 import BeautifulSoup
-from celery import group
 from celery.result import GroupResult
 from faker import Faker
 from http_crawler import crawl
+from requests import Response
 
 from redbot.core.async import celery
 from redbot.modules import Attack
@@ -51,22 +50,22 @@ class HTTPAttacks(Attack):
         attacks = [crawl_site]
         if cls.get_setting('enable_nikto'):
             attacks.append(run_nikto)
-        cls.log("Starting HTTP attack.")
         targets = cls.get_random_targets()
-        g = cls.attack_all(targets)
+        cls.log("Starting HTTP attack on " + str(targets))
+        g = cls.attack_all(attacks=attacks, targets=targets)
         return g, targets
 
 
 cls = HTTPAttacks
 
 
-def get_proper_url(target: Tuple[str, int]) -> str:
-    hostname = get_hosts()[target[0]].get('hostname', target[0])
-    return 'http{}://{}:{}'.format('s' if target[1] == 443 else '', hostname, target[1])
+def get_proper_url(host: str, port: int) -> str:
+    hostname = get_hosts()[host].get('hostname', host)
+    return 'http{}://{}:{}'.format('s' if port == 443 else '', hostname, port)
 
 
 @celery.task
-def fill_submit_forms(resp):
+def fill_submit_forms(resp: Response):
     soup = BeautifulSoup(resp.text, 'lxml')
     fake = Faker()
     for form in soup.find_all('form'):
@@ -100,19 +99,21 @@ def fill_submit_forms(resp):
                     params[name] = fake.sentence()
         url = resp.url.split('/')[0] + '/' + inp.get('action', '/'.join(resp.url.split('/')[1:]))
         if inp.get('method', '').lower() == 'get':
-            requests.get(url, params=params, cookies=resp.cookies, headers={'User-Agent': fake.user_agent()})
+            requests.get(url, params=params, cookies=resp.cookies, headers={'User-Agent': fake.user_agent()},
+                         verify=False)
         else:
-            requests.post(url, data=params, cookies=resp.cookies, headers={'User-Agent': fake.user_agent()})
+            requests.post(url, data=params, cookies=resp.cookies, headers={'User-Agent': fake.user_agent()},
+                          verify=False)
 
 
 @celery.task
-def crawl_site(target: Tuple[str, int], submit_forms=True):
-    results = crawl(get_proper_url(target), follow_external_links=False)
+def crawl_site(host: str, port: int, submit_forms=True):
+    results = crawl(get_proper_url(host, port), follow_external_links=False)
     if submit_forms:
         for r in results:
             if r.status_code == 200:
-                fill_submit_forms.delay(r.text)
-    cls.log("Finished crawling {}:{}".format(*target))
+                fill_submit_forms.delay(r)
+    cls.log("Finished crawling {}:{}".format(host, port))
 
 
 @celery.task
