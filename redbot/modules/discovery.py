@@ -48,7 +48,7 @@ class Discovery(Attack):
         },
         'ports': {
             'name': 'Target Ports',
-            'default': ",".join((str(n) for n in (21, 22, 23, 80, 443))),
+            'default': "",
             'description': 'Comma-separated TCP ports or port ranges to scan. - for all ports.'
         },
         'scan_interval': {
@@ -200,7 +200,10 @@ def do_discovery(force: bool = False):
 
 @celery.task(bind=True)
 def nmap_scan(self, target: Dict[str, str]) -> None:
-    options = Discovery.get_setting('scan_options') + " -p" + Discovery.get_setting('ports')
+    options = Discovery.get_setting('scan_options')
+    ports = Discovery.get_setting('ports')
+    if ports:
+        options += ' -p' + ports
     nm = NmapProcess(target['range'], options=options)
     nm.run_background()
     while nm.is_running():

@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import requests
 from bs4 import BeautifulSoup
@@ -6,6 +6,7 @@ from celery.result import GroupResult
 from faker import Faker
 from http_crawler import crawl
 from requests import Response
+from requests.utils import dict_from_cookiejar
 
 from redbot.core.async import celery
 from redbot.modules import Attack
@@ -65,8 +66,8 @@ def get_proper_url(host: str, port: int) -> str:
 
 
 @celery.task
-def fill_submit_forms(resp: Response):
-    soup = BeautifulSoup(resp.text, 'lxml')
+def fill_submit_forms(resp_text: str, resp_url: str, resp_cookies: Dict):
+    soup = BeautifulSoup(resp_text, 'lxml')
     fake = Faker()
     for form in soup.find_all('form'):
         params = {}
@@ -97,12 +98,12 @@ def fill_submit_forms(resp: Response):
                     params[name] = inp['value']
                 else:
                     params[name] = fake.sentence()
-        url = resp.url.split('/')[0] + '/' + inp.get('action', '/'.join(resp.url.split('/')[1:]))
+        url = resp_url.split('/')[0] + '/' + inp.get('action', '/'.join(resp_url.split('/')[1:]))
         if inp.get('method', '').lower() == 'get':
-            requests.get(url, params=params, cookies=resp.cookies, headers={'User-Agent': fake.user_agent()},
+            requests.get(url, params=params, cookies=resp_cookies, headers={'User-Agent': fake.user_agent()},
                          verify=False)
         else:
-            requests.post(url, data=params, cookies=resp.cookies, headers={'User-Agent': fake.user_agent()},
+            requests.post(url, data=params, cookies=resp_cookies, headers={'User-Agent': fake.user_agent()},
                           verify=False)
 
 
@@ -112,7 +113,7 @@ def crawl_site(host: str, port: int, submit_forms=True):
     if submit_forms:
         for r in results:
             if r.status_code == 200:
-                fill_submit_forms.delay(r)
+                fill_submit_forms.delay(r.text, r.url, dict_from_cookiejar(r.cookies))
     cls.log("Finished crawling {}:{}".format(host, port))
 
 
