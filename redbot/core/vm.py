@@ -18,6 +18,11 @@ def shell_unpack_kwargs(config, driver):
     return result
 
 
+def clean_machines() -> None:
+    for machine in machines:
+        machine.rm()
+
+
 def deploy_docker_machine(machine_name: str, driver: str = 'vmwarevsphere', config: Dict[str, str] = {}):
     m = Machine()
     m.create(machine_name, driver=driver, blocking=True, xarg=shell_unpack_kwargs(config, driver))
@@ -70,4 +75,3 @@ def deploy_worker(name: str = "", prebuilt: str = ''):
     m, c = deploy_docker_machine(name or 'redbot-' + str(len(machines)), config=config)
     image = deploy_container(c, file)
     images.append(image)
-
