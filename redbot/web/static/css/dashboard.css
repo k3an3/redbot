@@ -125,3 +125,7 @@ body {
     background: #4CAF50;
     cursor: pointer;
 }
+
+.portnum {
+    margin-right: 1px;
+}

