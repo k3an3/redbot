@@ -129,14 +129,19 @@ def set_up_default_settings() -> Dict[str, Dict]:
                            'user must have permissions to assign this network. This network must have DHCP. '
         },
         'vcenter_deploy_host': {
-            'name': 'Deploy Host(s)',
-            'default': 'CDC/*',
-            'description': 'The name of the host or cluster (e.g. CDC/*) that Redbot workers should be deployed to. '
-                           'The user must have permission to create VMs on the target host or cluster. '
+            'name': 'Deploy Host',
+            'default': '*',
+            'description': 'Host to deploy to. Not needed if a pool within a cluster is selected.'
+        },
+        'vcenter_folder': {
+            'name': 'Deploy Folder',
+            'default': 'ISEAGE/Keane/Redbot',
+            'description': 'The name of the folder to deploy Redbot workers to. The user must have permission '
+                           'to create VMs in this folder. '
         },
         'vcenter_pool': {
             'name': 'Deploy Pool',
-            'default': 'Redbot',
+            'default': '/*/host/*/Resources/ISEAGE/Keane/Redbot',
             'description': 'The name of the resource pool to deploy Redbot workers to. The user must have permission '
                            'to create VMs in this pool. '
         },

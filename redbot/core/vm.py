@@ -4,7 +4,7 @@ from docker import DockerClient
 from docker.models.images import Image
 from machine import Machine
 
-from redbot.core.utils import get_core_setting, get_core_settings
+from redbot.core.utils import get_core_setting
 
 machines = []
 images = []
@@ -18,9 +18,9 @@ def shell_unpack_kwargs(config, driver):
     return result
 
 
-def deploy_docker_machine(machine_name: str, driver: str = 'vmwarevsphere', machine_config: Dict[str, str] = {}):
+def deploy_docker_machine(machine_name: str, driver: str = 'vmwarevsphere', config: Dict[str, str] = {}):
     m = Machine()
-    m.create(machine_name, driver=driver, blocking=True, xarg=shell_unpack_kwargs(machine_config, driver))
+    m.create(machine_name, driver=driver, blocking=True, xarg=shell_unpack_kwargs(config, driver))
     c = DockerClient(**m.config(machine=machine_name))
     c.ping()
     machines.append((m, c))
@@ -37,15 +37,19 @@ def deploy_container(c: DockerClient, fileobj: TextIO = None) -> Image:
     return image
 
 
-def deploy_worker(prebuilt: str = ''):
+def deploy_worker(name: str = "", prebuilt: str = ''):
     config = {
         'vcenter': get_core_setting('vcenter_host'),
         'username': get_core_setting('vcenter_user'),
         'password': get_core_setting('vcenter_password'),
-        'network': get_core_setting('vcenter_network'),
+        'network': get_core_setting('vcenter_mgmt_network'),
+        'network': get_core_setting('vcenter_attack_network'),
         'hostsystem': get_core_setting('vcenter_deploy_host'),
-        'pool': get_core_setting('vcenter_pool')
+        'pool': get_core_setting('vcenter_pool'),
+        'folder': get_core_setting('vcenter_folder'),
+        'datastore': 'CDC/Host11'
     }
+    print("Deploy with config", config)
     build_mode = get_core_setting('build_mode')
     file, image = None, None
 
@@ -63,7 +67,7 @@ def deploy_worker(prebuilt: str = ''):
         file = image.save()
 
     # Deploy built image to target
-    m, c = deploy_docker_machine('redbot-' + len(machines), config=config)
+    m, c = deploy_docker_machine(name or 'redbot-' + str(len(machines)), config=config)
     image = deploy_container(c, file)
     images.append(image)
 

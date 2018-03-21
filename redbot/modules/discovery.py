@@ -49,7 +49,7 @@ class Discovery(Attack):
         'ports': {
             'name': 'Target Ports',
             'default': "",
-            'description': 'Comma-separated TCP ports or port ranges to scan. - for all ports.'
+            'description': 'Comma-separated TCP ports or port ranges to scan. Default is 1000 most common.'
         },
         'scan_interval': {
             'name': 'Scan Interval',
