@@ -4,9 +4,9 @@ from docker import DockerClient
 from docker.models.images import Image
 from machine import Machine
 
+from redbot.core.models import storage
 from redbot.core.utils import get_core_setting
 
-machines = []
 images = []
 
 
@@ -19,16 +19,22 @@ def shell_unpack_kwargs(config, driver):
 
 
 def clean_machines() -> None:
-    for machine in machines:
-        machine.rm()
+    m = Machine()
+    for machine in storage.smembers('machines'):
+        m.rm(machine=machine)
+
+
+def get_docker_client(machine_name: str) -> DockerClient:
+    m = Machine()
+    return DockerClient(**m.config(machine=machine_name))
 
 
 def deploy_docker_machine(machine_name: str, driver: str = 'vmwarevsphere', config: Dict[str, str] = {}):
     m = Machine()
     m.create(machine_name, driver=driver, blocking=True, xarg=shell_unpack_kwargs(config, driver))
-    c = DockerClient(**m.config(machine=machine_name))
+    c = get_docker_client(machine_name)
     c.ping()
-    machines.append((m, c))
+    storage.sadd('machines', machine_name)
     return m, c
 
 
@@ -66,12 +72,12 @@ def deploy_worker(name: str = "", prebuilt: str = ''):
         c = DockerClient()
         image = deploy_container(c)
     elif build_mode == 'virtualbox':
-        m, c = deploy_docker_machine('redbot-' + len(machines), 'virtualbox')
+        m, c = deploy_docker_machine('redbot-' + str(storage.scard('machines')), 'virtualbox')
         image = deploy_container(c)
     if image:
         file = image.save()
 
     # Deploy built image to target
-    m, c = deploy_docker_machine(name or 'redbot-' + str(len(machines)), config=config)
+    m, c = deploy_docker_machine(name or 'redbot-' + str(storage.scard('machines')), config=config)
     image = deploy_container(c, file)
     images.append(image)
