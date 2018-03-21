@@ -130,7 +130,7 @@ def set_up_default_settings() -> Dict[str, Dict]:
         },
         'vcenter_deploy_host': {
             'name': 'Deploy Host',
-            'default': '*',
+            'default': '',
             'description': 'Host to deploy to. Not needed if a pool within a cluster is selected.'
         },
         'vcenter_folder': {
@@ -159,6 +159,11 @@ def set_up_default_settings() -> Dict[str, Dict]:
             'description': 'Define the number of attack workers for each target. Will cause the workers to scale '
                            'appropriately. '
         },
+        'vcenter_datastore': {
+            'name': 'Deploy Datastore',
+            'default': '',
+            'description': 'The names of one or more datastores to deploy to. A random datastore will be selected.'
+        }
     }
     set_core_settings(settings)
     return settings

@@ -1,3 +1,4 @@
+import random
 from typing import TextIO, Dict
 
 from docker import DockerClient
@@ -58,7 +59,7 @@ def deploy_worker(name: str = "", prebuilt: str = ''):
         'hostsystem': get_core_setting('vcenter_deploy_host'),
         'pool': get_core_setting('vcenter_pool'),
         'folder': get_core_setting('vcenter_folder'),
-        'datastore': 'CDC/Host11'
+        'datastore': random.choice(get_core_setting('vcenter_datacenter').split(','))
     }
     print("Deploy with config", config)
     build_mode = get_core_setting('build_mode')
