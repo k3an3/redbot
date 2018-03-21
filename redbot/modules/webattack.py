@@ -109,10 +109,11 @@ def fill_submit_forms(resp_text: str, resp_url: str, resp_cookies: Dict):
 @celery.task
 def crawl_site(host: str, port: int):
     results = crawl(get_proper_url(host, port), follow_external_links=False)
-    if HTTPAttacks.get_setting('submit_forms') in [True, 'True']:
-        for r in results:
-            if r.status_code == 200:
-                fill_submit_forms.delay(r.text, r.url, dict_from_cookiejar(r.cookies))
+    submit = HTTPAttacks.get_setting('submit_forms') in [True, 'True']
+    # Iterate anyway because results is a generator
+    for r in results:
+        if submit and r.status_code == 200:
+            fill_submit_forms.delay(r.text, r.url, dict_from_cookiejar(r.cookies))
     cls.log("Finished crawling {}:{}".format(host, port))
 
 

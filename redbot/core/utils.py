@@ -163,6 +163,11 @@ def set_up_default_settings() -> Dict[str, Dict]:
             'name': 'Deploy Datastore',
             'default': '',
             'description': 'The names of one or more datastores to deploy to. A random datastore will be selected.'
+        },
+        'task_timeout': {
+            'name': 'Task Timeout',
+            'default': 60,
+            'description': 'How long attacks should be allowed to run before they are killed.'
         }
     }
     set_core_settings(settings)

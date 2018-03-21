@@ -4,7 +4,7 @@ async.py
 
 Manages the setup for task handling.
 """
-
+import os
 from celery import Celery
 
 from redbot.core.models import modules
@@ -13,9 +13,10 @@ from redbot.settings import REDIS_HOST
 
 if not modules:
     safe_load_config()
-celery = Celery(include=modules, backend='redis://' + REDIS_HOST, broker='redis://' + REDIS_HOST)
+celery = Celery(include=modules, backend='redis://' + os.getenv('REDIS_HOST', REDIS_HOST),
+                broker='redis://' + os.getenv('REDIS_HOST', REDIS_HOST))
 celery.conf.update(
-    CELERY_TASK_SOFT_TIME_LIMIT=600,
+    task_soft_time_limit=int(get_core_setting('task_timeout')),
 )
 
 
