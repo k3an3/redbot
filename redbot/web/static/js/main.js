@@ -39,3 +39,7 @@ ws.on('connect', function(data) {
 ws.on('logs', function() {
     logcount.html(parseInt(logcount.html()) + 1);
 });
+
+ws.on('reload', function () {
+    location.reload();
+});

@@ -1,8 +1,8 @@
 ---
 modules:
-  - discovery
   - webattack
   - sshattack
+  - metasploit
 
 targets:
   - name: Team 1

@@ -67,6 +67,7 @@ def admin_ws(data):
             send_msg("Running attack module '{}' against {} targets.".format(r.name, len(targets)), "success")
     elif command == 'reload':
         parse('config.yml')
+        emit('reload')
 
 
 @socketio.on('run nmap')

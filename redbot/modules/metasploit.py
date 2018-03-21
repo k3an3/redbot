@@ -1,3 +1,4 @@
+import platform
 import random
 from subprocess import run
 from time import sleep
@@ -51,11 +52,16 @@ def _slow_msf_search(client: MsfRpcClient, query: str):
 def msf_search(client: MsfRpcClient, query: str) -> List[str]:
     cached = storage.smembers('metasploit:' + query)
     if not cached:
+        print("Cache miss, using slow MSF search")
         results = _slow_msf_search(client, query)
         for result in results:
             storage.sadd('metasploit:' + query, result.decode())
         return results
     return list(cached)
+
+
+def get_lock() -> str:
+    return 'msfrpcd:' + platform.node() + ':lock'
 
 
 @celery.task
@@ -70,12 +76,12 @@ def msf_attack(host: str, *args, **kwargs):
             client = MsfRpcClient(MSF.get_setting('password'))
         except ConnectionRefusedError:
             MSF.log("Can't connect to msfrpcd. Trying to start it...", 'warning')
-            if storage.get('msfrpcd-lock'):
+            if storage.get(get_lock()):
                 sleep(10)
             else:
-                storage.incr('msfrpcd-lock')
+                storage.incr(get_lock())
                 run(['msfrpcd', '-P', MSF.get_setting('password')])
-                storage.delete('msfrpcd-lock')
+                storage.delete(get_lock())
         except MsfRpcError:
             MSF.log("Error connecting to msfrpcd. Is the password correct?", 'danger')
         tries += 1
@@ -89,9 +95,8 @@ def msf_attack(host: str, *args, **kwargs):
             port = p['port']
             break
     exploit = random.choice(msf_search(client, query))
-    MSF.log('Using exploit ' + exploit + ' against ' + host)
+    MSF.log("Using exploit {} against {}:{}".format(exploit, host, port))
     exploit = client.modules.use('exploit', exploit)
-    print(exploit.required)
     for r in exploit.required:
         if r == b'RHOST':
             exploit['RHOST'.encode()] = host

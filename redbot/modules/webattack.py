@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 from celery.result import GroupResult
 from faker import Faker
 from http_crawler import crawl
-from requests import Response
 from requests.utils import dict_from_cookiejar
 
 from redbot.core.async import celery
@@ -108,9 +107,9 @@ def fill_submit_forms(resp_text: str, resp_url: str, resp_cookies: Dict):
 
 
 @celery.task
-def crawl_site(host: str, port: int, submit_forms=True):
+def crawl_site(host: str, port: int):
     results = crawl(get_proper_url(host, port), follow_external_links=False)
-    if submit_forms:
+    if HTTPAttacks.get_setting('submit_forms'):
         for r in results:
             if r.status_code == 200:
                 fill_submit_forms.delay(r.text, r.url, dict_from_cookiejar(r.cookies))
