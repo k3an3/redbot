@@ -54,8 +54,11 @@ ws.on('hosts', function(data) {
     table.empty();
     $.each(data.data, function(host, data) {
         graph_host([host, data.ports], data.target);
+        if (data.hostname != null)
+            host += " (" + data.hostname + ")";
         table.append('<tr><td>' + data.target + '</td><td>' + host + '</td><td>' + parse_ports(data.ports) + '</td><td id="notes-' + host + '"></td></tr>');
     });
+    $('[data-toggle="tooltip"]').tooltip();
 });
 
 function graph_host(host, target) {
@@ -161,7 +164,6 @@ function parse_ports(ports_list) {
     ports_list.forEach(function(port) {
         result += '<button type="button" class="btn btn-sm btn-secondary portnum" data-toggle="tooltip" data-html="true" title="' + port.banner + '">' + port.port + '</button>';
     });
-    $('[data-toggle="tooltip"]').tooltip();
     return result;
 }
 
@@ -182,4 +184,5 @@ ws.on('scan finished', function(a) {
 
 
 get_hosts();
+$('.loader').fadeOut();
 setInterval(get_hosts, 5000);

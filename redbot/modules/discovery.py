@@ -19,6 +19,7 @@ Hosts:
 """
 import json
 import socket
+from json import JSONDecodeError
 from time import sleep, time
 from typing import Dict
 
@@ -26,6 +27,7 @@ import requests
 from celery import group
 from libnmap.parser import NmapParser, NmapParserException
 from libnmap.process import NmapProcess
+from requests.exceptions import MissingSchema, HTTPError
 
 from redbot.core.async import celery
 from redbot.core.models import targets, storage
@@ -124,14 +126,35 @@ def dns_lookup(hostname: str) -> str:
 
 def update_iscore_targets() -> None:
     storage.set('last_iscore_update', int(time()))
-    r = requests.get(get_url() + 'servicestatus', headers={'Content-Type': 'application/json'}).json()
+    try:
+        r = requests.get(get_url() + 'servicestatus', headers={'Content-Type': 'application/json'})
+        r.raise_for_status()
+        r = r.json()
+    except MissingSchema:
+        send_msg('IScorE update failed. Check that a valid IScorE URL was provided.', 'danger')
+        return
+    except HTTPError as e:
+        send_msg('Error when contacting IScorE: ' + str(e), 'danger')
+        return
+    except JSONDecodeError:
+        send_msg("IScorE didn't return valid JSON.", 'danger')
+        return
     hosts = {}
     records = {}
     if Discovery.get_setting('iscore_api'):
-        r2 = requests.get(get_url() + 'dns', headers={
-            'Content-Type': 'application/json',
-            'Authorization': 'Token ' + Discovery.get_setting('iscore_api').strip()
-        }).json()
+        try:
+            r2 = requests.get(get_url() + 'dns', headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Token ' + Discovery.get_setting('iscore_api').strip()
+            })
+            r2.raise_for_status()
+            r2 = r2.json()
+        except HTTPError as e:
+            send_msg('Error with IScorE API: ' + str(e), 'danger')
+            return
+        except JSONDecodeError:
+            send_msg("IScorE API didn't return valid JSON.", 'danger')
+            return
         for rec in r2:
             records['{}.team{}.{}'.format(rec['name'], rec['team_number'], TEAM_DOMAIN_SUFFIX)] = rec['value']
     else:
@@ -147,7 +170,7 @@ def update_iscore_targets() -> None:
         if not hosts[hostn].get('hostname'):
             hosts[hostn]['hostname'] = host['service_url']
         if not host['service_status'] == "down":
-            hosts[hostn]['ports'].append(host['service_port'])
+            hosts[hostn]['ports'].append({'port': host['service_port'], 'banner': host['service_name']})
     update_hosts(hosts)
     send_msg('IScorE update finished.')
     socketio.emit('scan finished', {}, broadcast=True)
@@ -162,7 +185,7 @@ def update_hosts(hosts) -> None:
     for host in hosts:
         if host in current_hosts:
             current_hosts[host]['ports'] = list(set(hosts[host]['ports'] + current_hosts[host]['ports']))
-            current_hosts[host]['notes'].append(host['notes'])
+            current_hosts[host]['notes'].append(hosts[host]['notes'])
         else:
             current_hosts[host] = hosts[host]
     storage.set('hosts', json.dumps(current_hosts))
