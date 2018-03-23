@@ -1,15 +1,20 @@
 from typing import Dict
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect
+from flask_login import LoginManager, login_required, logout_user
 from flask_socketio import SocketIO
+from peewee import DoesNotExist
 
 from redbot import settings
-from redbot.core.models import modules
+from redbot.core.models import modules, User
 from redbot.core.utils import get_log, get_class, get_core_settings
+from redbot.settings import LDAP_HOST
 
 app = Flask(__name__)
 app.secret_key = settings.SECRET_KEY
 socketio = SocketIO(app, cors_allowed_origins=[])
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 
 @app.route('/')
@@ -76,3 +81,35 @@ def format_setting(module: str, name: str, setting: Dict):
             desc=desc,
             type='password' if 'password' in name.lower() else 'text'
         )
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(id=user_id)
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect('/')
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    created = False
+    try:
+        user = User.get(username=username)
+    except DoesNotExist:
+        if LDAP_HOST:
+            user = ldap_auth(username, password)
+            created = True
+    if user:
+        if created or user.check_password(password):
+            login_user(user)
+            flash('Logged in successfully.')
+    if not user:
+        flash('Invalid credentials.')
+    return redirect('/')

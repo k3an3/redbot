@@ -6,9 +6,13 @@ docker
 eventlet
 faker
 Flask
+Flask-Login
 flask-socketio
 http_crawler
+ldap3
 paramiko
+passlib
+peewee
 python-libnmap
 redis
 requests

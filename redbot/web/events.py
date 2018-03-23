@@ -1,4 +1,7 @@
-from flask_socketio import emit
+import functools
+
+from flask_login import current_user
+from flask_socketio import emit, disconnect
 
 from redbot.core.configparser import parse
 from redbot.core.models import modules, storage
@@ -89,3 +92,14 @@ def get_hosts_ws(data):
     else:
         result['data'] = None
     emit('hosts', result)
+
+
+def ws_login_required(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        if not current_user.is_authenticated:
+            disconnect()
+        else:
+            return f(*args, **kwargs)
+
+    return wrapped
