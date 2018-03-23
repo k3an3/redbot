@@ -110,7 +110,7 @@ function graph_host(host, target) {
             'label': host[0],
         }
     });
-    host[1].forEach(function(b) {
+    $.each(host[1], function(k, b) {
         cy.add({
             group: "nodes",
             data: {
@@ -196,9 +196,9 @@ function get_hosts() {
         ws.emit('get hosts', {scantime: scantime});
 }
 
-function parse_ports(ports_list) {
+function parse_ports(ports) {
     var result = "";
-    ports_list.forEach(function(port) {
+    $.each(ports, function(key, port) {
         result += '<button type="button" class="btn btn-sm btn-secondary portnum" data-toggle="tooltip" data-html="true" title="' + port.banner + '">' + port.port + '</button>';
     });
     return result;

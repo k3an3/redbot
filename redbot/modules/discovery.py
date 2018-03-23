@@ -6,7 +6,11 @@ Hosts:
 
     {
         hostname: {
-                        'ports': [port1, port2, port3, ...],
+                        'ports': {
+                            portnum: {
+                                banner: "",
+                            }
+                        }
                         'target': target,
                     },
         hostname: {
@@ -51,7 +55,7 @@ class Discovery(Attack):
         'ports': {
             'name': 'Target Ports',
             'default': "",
-            'description': 'Comma-separated TCP ports or port ranges to scan. Default is 1000 most common.'
+            'description': 'Comma-separated ports or port ranges to scan. Default is 1000 most common.'
         },
         'scan_interval': {
             'name': 'Scan Interval',
@@ -77,7 +81,7 @@ class Discovery(Attack):
             'name': 'Host Discovery Method',
             'default': 'nmap',
             'description': 'Method for discovering targets. Can be "nmap", "iscore", or "both". IScorE requires a '
-                           'valid URL. '
+                           'valid configuration. '
         },
     }
 
@@ -126,6 +130,7 @@ def dns_lookup(hostname: str) -> str:
 
 def update_iscore_targets() -> None:
     storage.set('last_iscore_update', int(time()))
+    # Fetch service statuses from API
     try:
         r = requests.get(get_url() + 'servicestatus', headers={'Content-Type': 'application/json'})
         r.raise_for_status()
@@ -141,6 +146,7 @@ def update_iscore_targets() -> None:
         return
     hosts = {}
     records = {}
+    # Resolve service hostnames to IP addresses, as they will be stored
     if Discovery.get_setting('iscore_api'):
         try:
             r2 = requests.get(get_url() + 'dns', headers={
@@ -158,19 +164,21 @@ def update_iscore_targets() -> None:
         for rec in r2:
             records['{}.team{}.{}'.format(rec['name'], rec['team_number'], TEAM_DOMAIN_SUFFIX)] = rec['value']
     else:
+        # Low performance fallback method to obtain IP addresses using DNS
         lookups = group(dns_lookup.s(host['service_url'] for host in r))
         [records.update(l) for l in lookups.get()]
     for host in r:
         hostn = records.get(host['service_url'], host['service_url'])
-        if not hosts.get(hostn):
-            hosts[hostn] = {'ports': [],
+        if not host['service_status'] == 'down':
+            ports = hosts.get(hostn, {}).get('ports', {})
+            hosts[hostn] = {'ports': ports,
                             'target': "Team " + str(host['team_number']),
                             'notes': [],
                             }
-        if not hosts[hostn].get('hostname'):
-            hosts[hostn]['hostname'] = host['service_url']
-        if not host['service_status'] == "down":
-            hosts[hostn]['ports'].append({'port': host['service_port'], 'banner': host['service_name']})
+            if not hosts[hostn].get('hostname'):
+                hosts[hostn]['hostname'] = host['service_url']
+            hosts[hostn]['ports'][str(host['service_port'])] = {'port': host['service_port'],
+                                                                'banner': "IScorE Service: " + host['service_name']}
     update_hosts(hosts)
     send_msg('IScorE update finished.')
     socketio.emit('scan finished', {}, broadcast=True)
@@ -184,8 +192,17 @@ def update_hosts(hosts) -> None:
     current_hosts = get_hosts()
     for host in hosts:
         if host in current_hosts:
-            current_hosts[host]['ports'] = list(set(hosts[host]['ports'] + current_hosts[host]['ports']))
-            current_hosts[host]['notes'].append(hosts[host]['notes'])
+            current_host = current_hosts[host]
+            host = hosts[host]
+            for p in host['ports']:
+                p = str(p)
+                if p in current_host['ports']:
+                    if not host['ports'][p]['banner'] in current_host['ports'][p]['banner']:
+                        current_host['ports'][p]['banner'] += ", " + host['ports'][p]['banner']
+            if not current_host.get('notes'):
+                current_host['notes'] = []
+            current_host['notes'].append(host.get('notes'))
+            current_host['hostname'] = host['hostname']
         else:
             current_hosts[host] = hosts[host]
     storage.set('hosts', json.dumps(current_hosts))
@@ -203,7 +220,7 @@ def scan_in_progress() -> bool:
     return storage.get('scan_in_progress')
 
 
-@celery.task(time_limit=600)
+@celery.task(soft_time_limit=600)
 def do_discovery(force: bool = False):
     discovery_type = Discovery.get_setting('discovery_type')
     if 'nmap' in discovery_type or 'both' in discovery_type:
@@ -221,7 +238,7 @@ def do_discovery(force: bool = False):
             update_iscore_targets()
 
 
-@celery.task(bind=True)
+@celery.task(bind=True, soft_time_limit=600)
 def nmap_scan(self, target: Dict[str, str]) -> None:
     options = Discovery.get_setting('scan_options')
     ports = Discovery.get_setting('ports')
@@ -237,7 +254,7 @@ def nmap_scan(self, target: Dict[str, str]) -> None:
         report = NmapParser.parse(nm.stdout)
     except NmapParserException as e:
         print(e)
-    h = [(host.address, [host.get_service(*p).get_dict() for p in host.get_open_ports()])
+    h = [(host.address, {str(p[0]): host.get_service(*p).get_dict() for p in host.get_open_ports()})
          for host in report.hosts if host.is_up()]
     self.update_state(state="RESULTS", meta={'hosts': h,
                                              'target': target['name']})

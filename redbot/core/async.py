@@ -16,7 +16,7 @@ if not modules:
 celery = Celery(include=modules, backend='redis://' + os.getenv('REDIS_HOST', REDIS_HOST),
                 broker='redis://' + os.getenv('REDIS_HOST', REDIS_HOST))
 celery.conf.update(
-    task_soft_time_limit=int(get_core_setting('task_timeout')),
+    task_soft_time_limit=int(get_core_setting('task_timeout') or 60),
 )
 
 

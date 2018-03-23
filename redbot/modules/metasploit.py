@@ -91,7 +91,10 @@ def msf_attack(host: str, *args, **kwargs):
     port = None
     for p in random.sample(target['ports'], len(target['ports'])):
         if p.get('banner'):
+            # Naive banner parsing
             query = p['banner'].split()[1]
+            if query.lower() in ["microsoft", "windows"]:
+                query = p['banner'].split()[2]
             port = p['port']
             break
     exploit = random.choice(msf_search(client, query))
