@@ -89,9 +89,6 @@ class Discovery(Attack):
     @classmethod
     def push_update(cls, data):
         if data.get('status') == 'RESULTS':
-            hosts = {host[0]: {'ports': host[1], 'target': data['result']['target']} for host in
-                     data['result']['hosts']}
-            update_hosts(hosts)
             log("Completed nmap scan against " + data['result']['target'], "nmap", "success")
         socketio.emit('nmap progress', data, broadcast=True)
 
@@ -102,7 +99,6 @@ class Discovery(Attack):
         g = group(nmap_scan.s(target) for target in targets).apply_async(queue='discovery')
         if ondemand:
             g.get(on_message=cls.push_update, propagate=False)
-        storage.set('last_nmap_scan', int(time()))
         storage.set('scan_in_progress', False)
         send_msg('Scan finished.')
         socketio.emit('scan finished', {}, broadcast=True)
@@ -221,7 +217,7 @@ def scan_in_progress() -> bool:
     return storage.get('scan_in_progress')
 
 
-@celery.task(soft_time_limit=600)
+@celery.task(soft_time_limit=1200)
 def do_discovery(force: bool = False):
     discovery_type = Discovery.get_setting('discovery_type')
     if 'nmap' in discovery_type or 'both' in discovery_type:
@@ -257,5 +253,8 @@ def nmap_scan(self, target: Dict[str, str]) -> None:
         print(e)
     h = [(host.address, {str(p[0]): host.get_service(*p).get_dict() for p in host.get_open_ports()})
          for host in report.hosts if host.is_up()]
+    hosts = {host[0]: {'ports': host[1], 'target': target['name']} for host in h}
+    update_hosts(hosts)
+    storage.set('last_nmap_scan', int(time()))
     self.update_state(state="RESULTS", meta={'hosts': h,
                                              'target': target['name']})

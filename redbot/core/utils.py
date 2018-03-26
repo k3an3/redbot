@@ -209,7 +209,8 @@ def get_settings(key_prefix: str) -> Dict[str, Any]:
 
 def get_setting(key_prefix: str, key: str) -> Any:
     stored = storage.hgetall(key_prefix + ":" + key)
-    return stored.get('value', stored.get('default'))
+    val = stored.get('value', stored.get('default'))
+    return False if val == 'False' else True if val == 'True' else val
 
 
 def get_core_settings() -> Dict:

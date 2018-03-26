@@ -26,7 +26,7 @@ def run_jobs() -> None:
     Chooses a random attack and executes it.
     """
     attack = get_random_attack()
-    if get_core_setting('attacks_enabled'):
+    if get_core_setting('enable_attacks'):
         attack.run_attack()
 
 

@@ -81,8 +81,10 @@ ws.on('hosts', function(data) {
     $.each(data.notes, function(host, notes) {
         $('#notes-' + host.replace(/\./g, '\\.')).text(notes);
     });
-    if (data.data == null)
+    if (data.data == null) {
+        $('.loader').fadeOut();
         return;
+    }
     cy.destroy();
     init_graph();
     var table = $('#hosts tbody');
@@ -96,6 +98,7 @@ ws.on('hosts', function(data) {
     });
     $('[data-toggle="tooltip"]').tooltip();
     sortTable();
+    $('.loader').fadeOut();
 });
 
 function graph_host(host, target) {
@@ -221,5 +224,4 @@ ws.on('scan finished', function(a) {
 
 
 get_hosts();
-$('.loader').fadeOut();
 setInterval(get_hosts, 5000);
