@@ -5,15 +5,16 @@ Hosts:
     Format for storing hosts, hostname or IP address as key.
 
     {
-        hostname: {
+        'hostname1': {
                         'ports': {
                             portnum: {
                                 'banner': '',
                             }
                         }
                         'target': target,
+                        'notes': '',
                     },
-        hostname: {
+        'hostname2': {
                         ...
                     },
         ...
