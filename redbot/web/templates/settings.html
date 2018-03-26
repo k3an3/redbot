@@ -29,6 +29,9 @@
                     <button class="btn btn-danger" id="clearlogs">Clear Logs</button>
                     <button class="btn btn-warning" id="testattack">Run Random Attack</button>
                     <button class="btn btn-info" id="reload">Reload config.yml</button>
+                    <div class="slidecontainer">
+                        <input type="range" min="1" max="100" value="50" class="slider" id="aggressiveness">
+                    </div>
                 </div>
                 {% for module, settings, notes, test in modules %}
                     <div id="{{ module }}">

@@ -3,6 +3,7 @@ var loadingbar = $('#loadingbar');
 var scantime = 0;
 var scanning = false;
 loading.hide();
+$('.loader-sm').hide()
 
 var cy = cytoscape({
     container: $('#cy'),
@@ -41,6 +42,7 @@ $('#fit').click(function() {
     cy.fit();
 });
 
+// Source: https://www.w3schools.com/howto/howto_js_sort_table.asp
 function sortTable() {
     var table, rows, switching, i, x, y, shouldSwitch;
     table = document.getElementById("hosts");
@@ -81,15 +83,18 @@ ws.on('hosts', function(data) {
     $.each(data.notes, function(host, notes) {
         $('#notes-' + host.replace(/\./g, '\\.')).text(notes);
     });
+    if (data.scanning > 0)
+        $('.loader-sm').fadeIn();
+    else
+        $('.loader-sm').fadeOut();
     if (data.data == null) {
-        $('.loader').fadeOut();
+        $('.loader-lg').fadeOut();
         return;
     }
     cy.destroy();
     init_graph();
     var table = $('#hosts tbody');
     table.empty();
-    console.log(data.data);
     $.each(data.data, function(host, data) {
         graph_host([host, data.ports], data.target);
         if (data.hostname != null)
@@ -98,7 +103,7 @@ ws.on('hosts', function(data) {
     });
     $('[data-toggle="tooltip"]').tooltip();
     sortTable();
-    $('.loader').fadeOut();
+    $('.loader-lg').fadeOut();
 });
 
 function graph_host(host, target) {
@@ -195,7 +200,7 @@ ws.on('nmap progress', function(data) {
 });
 
 function get_hosts() {
-    if (!scanning)
+    if (!scanning || true)
         ws.emit('get hosts', {scantime: scantime});
 }
 

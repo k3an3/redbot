@@ -94,14 +94,12 @@ class Discovery(Attack):
 
     @classmethod
     def run_scans(cls, ondemand: bool = False) -> None:
-        storage.set('scan_in_progress', True)
         clear_targets()
         g = group(nmap_scan.s(target) for target in targets).apply_async(queue='discovery')
         if ondemand:
             g.get(on_message=cls.push_update, propagate=False)
-        storage.set('scan_in_progress', False)
-        send_msg('Scan finished.')
-        socketio.emit('scan finished', {}, broadcast=True)
+            send_msg('Scan finished.')
+            socketio.emit('scan finished', {}, broadcast=True)
 
 
 cls = Discovery
@@ -122,6 +120,7 @@ def clear_targets() -> None:
     storage.delete('hosts')
     storage.set('last_nmap_scan', 0)
     storage.set('last_iscore_update', 0)
+    storage.set('scan_in_progress', 0)
 
 
 @celery.task
@@ -226,7 +225,7 @@ def update_hosts(hosts) -> None:
             if not current_host.get('notes'):
                 current_host['notes'] = []
             current_host['notes'].append(host.get('notes'))
-            current_host['hostname'] = host['hostname']
+            current_host['hostname'] = host.get('hostname')
         else:
             current_hosts[host] = hosts[host]
     storage.set('hosts', json.dumps(current_hosts))
@@ -248,12 +247,12 @@ def get_last_update() -> int:
     return int(storage.get('last_iscore_update') or 0)
 
 
-def scan_in_progress() -> bool:
+def scan_in_progress() -> int:
     """
-    Return whether or not a scan is believed to be in progress.
-    :return: True if scanning, else False.
+    Return how many scans are in progress.
+    :return: Integer count of currrent running scans.
     """
-    return storage.get('scan_in_progress')
+    return int(storage.get('scan_in_progress') or 0)
 
 
 @celery.task(soft_time_limit=1200)
@@ -264,11 +263,14 @@ def do_discovery(force: bool = False) -> None:
     """
     discovery_type = Discovery.get_setting('discovery_type')
     if 'nmap' in discovery_type or 'both' in discovery_type:
-        if force or int(time()) - get_last_scan() > Discovery.get_setting('scan_interval'):
+        if force or int(time()) - get_last_scan() > int(Discovery.get_setting('scan_interval')) \
+                and not scan_in_progress():
             print("scanning now")
             if not force:
                 Discovery.log("Scheduled discovery scan started.")
             Discovery.run_scans(ondemand=force)
+        elif scan_in_progress():
+            print("already scanning")
         else:
             print("no need to scan")
     if 'iscore' in discovery_type or 'both' in discovery_type:
@@ -285,6 +287,7 @@ def nmap_scan(self, target: Dict[str, str]) -> None:
     Updates the host database when finished; may push status updates if invoked from web context.
     :param target: Target hosts or ranges in a format suitable for Nmap.
     """
+    storage.incr('scan_in_progress')
     options = Discovery.get_setting('scan_options')
     ports = Discovery.get_setting('ports')
     if ports:
@@ -304,5 +307,7 @@ def nmap_scan(self, target: Dict[str, str]) -> None:
     hosts = {host[0]: {'ports': host[1], 'target': target['name']} for host in h}
     update_hosts(hosts)
     storage.set('last_nmap_scan', int(time()))
+    if scan_in_progress() > 0:
+        storage.decr('scan_in_progress')
     self.update_state(state="RESULTS", meta={'hosts': h,
                                              'target': target['name']})

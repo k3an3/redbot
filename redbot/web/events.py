@@ -83,10 +83,10 @@ def nmap():
 
 @socketio.on('get hosts')
 def get_hosts_ws(data):
-    from redbot.modules.discovery import get_last_scan, get_last_update, get_hosts
+    from redbot.modules.discovery import get_last_scan, get_last_update, get_hosts, scan_in_progress
     last_scan = max(get_last_scan(), get_last_update())
     notes = {host: list(storage.smembers('notes:' + host)) for host in storage.smembers('notes')}
-    result = {'scantime': last_scan, 'notes': notes}
+    result = {'scantime': last_scan, 'notes': notes, 'scanning': scan_in_progress()}
     if data['scantime'] < last_scan:
         result['data'] = get_hosts()
     else:
