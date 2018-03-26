@@ -89,7 +89,7 @@ def msf_attack(host: str, *args, **kwargs):
     target = get_hosts()[host]
     query = ""
     port = None
-    for p in random.sample(target['ports'], len(target['ports'])):
+    for p in random.sample(list(target['ports']), len(target['ports'])):
         if p.get('banner'):
             # Naive banner parsing
             query = p['banner'].split()[1]

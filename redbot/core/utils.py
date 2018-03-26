@@ -47,10 +47,7 @@ def get_log(end: int = -1) -> List[str]:
 
 
 def host_has_port(host, port) -> bool:
-    for p in host['ports']:
-        if int(p['port']) == port:
-            return True
-    return False
+    return str(port) in host['ports']
 
 
 def random_targets(req_port: int = 0):
