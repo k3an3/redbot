@@ -197,9 +197,9 @@ def set_setting(key_prefix: str, key: str, value: Any = None) -> None:
 
 def get_settings(key_prefix: str) -> Dict[str, Any]:
     """
-    Low-level handler to read a setting
-    :param key_prefix:
-    :return:
+    Low-level handler to read all settings.
+    :param key_prefix: Which key(s) to retrieve.
+    :return: A dictionary of all settings.
     """
     settings = {}
     for s in storage.smembers(key_prefix):
@@ -208,6 +208,12 @@ def get_settings(key_prefix: str) -> Dict[str, Any]:
 
 
 def get_setting(key_prefix: str, key: str) -> Any:
+    """
+    Low-level handler to read a setting.
+    :param key_prefix: Which key prefix to prepend to the key.
+    :param key: Which key inside the prefix to retrieve.
+    :return: The setting's value.
+    """
     stored = storage.hgetall(key_prefix + ":" + key)
     val = stored.get('value', stored.get('default'))
     return False if val == 'False' else True if val == 'True' else val
@@ -221,6 +227,7 @@ def get_core_settings() -> Dict:
 
 
 def get_core_setting(key) -> Any:
+    ""
     return get_setting(BASE, key)
 
 
@@ -233,6 +240,10 @@ def set_core_setting(key: str, value: Any = None) -> None:
 
 
 def restart_redbot() -> None:
+    """
+    Attempt to restart the Redbot service. Will attempt to restart via Systemd, and will fallback to abuse Flask's
+    autoreload if it is in use.
+    """
     from redbot.web import send_msg
     if os.getppid() == 1:
         send_msg('Restarted service.')
@@ -243,6 +254,10 @@ def restart_redbot() -> None:
 
 
 def get_random_attack() -> Any:
+    """
+    Cycle through all installed modules and return the Attack class from one of them.
+    :return: An Attack class.
+    """
     from redbot.core.async import modules
     while True:
         try:
@@ -255,10 +270,18 @@ def get_random_attack() -> Any:
 
 
 def get_file(filename: str) -> str:
+    """
+    Return path to a file located in the 'files' subdirectory.
+    :param filename:
+    :return: Relateive path to the file.
+    """
     return os.path.join('files', filename)
 
 
 def safe_load_config() -> None:
+    """
+    Try to parse and load from config.yml; if it does not exist, will attempt to load config from Redis.
+    """
     try:
         parse('config.yml')
     except FileNotFoundError:
@@ -269,6 +292,11 @@ def safe_load_config() -> None:
 
 
 def is_admin(r: str) -> bool:
+    """
+    LDAP helper function to determine whether a user is a member of the Domain Admins group.
+    :param r: LDAP attributes
+    :return: True if the user is a Domain Admin, False otherwise.
+    """
     for g in [g.decode() for g in r['memberOf']]:
         if 'CN=Domain Admins,' in g:
             return True
@@ -276,6 +304,13 @@ def is_admin(r: str) -> bool:
 
 
 def ldap_auth(username: str, password: str) -> User:
+    """
+    Function to bind with an LDAP server given credentials, and fetch information about that user suitable for
+    authenticating and assigning roles to them. :param username: :param password: :return:
+    :param username: Username to bind with and to retrieve attributes for.
+    :param password: The user's password to bind with.
+    :return: A User object of an authenticated user. Returns None if the user could not be authenticated.
+    """
     s = Server(host=LDAP_HOST, port=LDAP_PORT, use_ssl=LDAP_SSL)
     with Connection(s, user=(LDAP_DN_FORMAT.format(username)), password=password) as c:
         u = None

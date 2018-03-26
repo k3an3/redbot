@@ -108,17 +108,29 @@ cls = Discovery
 
 
 def get_url() -> str:
+    """
+    Format the provided IScorE URL for the API.
+    :return: Full URL to IScorE's API.
+    """
     return Discovery.get_setting('iscore_url') + '/api/v1/'
 
 
 def clear_targets() -> None:
+    """
+    Erase the hosts currently in Redis and clear scan times.
+    """
     storage.delete('hosts')
     storage.set('last_nmap_scan', 0)
     storage.set('last_iscore_update', 0)
 
 
 @celery.task
-def dns_lookup(hostname: str) -> str:
+def dns_lookup(hostname: str) -> Dict[str, str]:
+    """
+    Slow, fallback method for resolving a hostname to IP address using real DNS queries.
+    :param hostname: The hostname to look up.
+    :return: The resolved IP address as a dictionary.
+    """
     try:
         return {hostname: socket.gethostbyname(hostname)}  # IScorE URLs are not URLs. This call is also IPv4 only.
     except socket.gaierror:
@@ -126,6 +138,13 @@ def dns_lookup(hostname: str) -> str:
 
 
 def update_iscore_targets() -> None:
+    """
+    Performs service discovery via IScorE's API. A list of all service scans are fetched, and the hostnames provided
+    for these services are resolved to IP address so they can be stored in the hosts database. Services that are
+    marked up are added to the hosts database, or the database information is updated if the entry already exists.
+    Requires a privileged IScorE API key in order to quickly resolve hosts, else it may be very slow/network
+    intensive while many DNS queries are performed.
+    """
     storage.set('last_iscore_update', int(time()))
     # Fetch service statuses from API
     try:
@@ -182,10 +201,18 @@ def update_iscore_targets() -> None:
 
 
 def get_hosts() -> Dict:
+    """
+    Shortcut to retrieve hosts from storage.
+    :return: Dictionary of discovery hosts.
+    """
     return json.loads(storage.get('hosts') or "{}")
 
 
 def update_hosts(hosts) -> None:
+    """
+    Parse and add/merge discovered hosts into the hosts database.
+    :param hosts: Dictionary of new/updated hosts to insert.
+    """
     current_hosts = get_hosts()
     for host in hosts:
         if host in current_hosts:
@@ -206,19 +233,35 @@ def update_hosts(hosts) -> None:
 
 
 def get_last_scan() -> int:
+    """
+    Shortcut to return the last scan time.
+    :return: UNIX timestamp of last scan.
+    """
     return int(storage.get('last_nmap_scan') or 0)
 
 
 def get_last_update() -> int:
+    """
+    Shortcut to return the last IScorE update time.
+    :return: UNIX timestamp of last update.
+    """
     return int(storage.get('last_iscore_update') or 0)
 
 
 def scan_in_progress() -> bool:
+    """
+    Return whether or not a scan is believed to be in progress.
+    :return: True if scanning, else False.
+    """
     return storage.get('scan_in_progress')
 
 
 @celery.task(soft_time_limit=1200)
-def do_discovery(force: bool = False):
+def do_discovery(force: bool = False) -> None:
+    """
+    Periodic task to determine whether scanning is necessary, and which scans to launch.
+    :param force: Whether the scan should be run now regardless of whether it is scheduled or not.
+    """
     discovery_type = Discovery.get_setting('discovery_type')
     if 'nmap' in discovery_type or 'both' in discovery_type:
         if force or int(time()) - get_last_scan() > Discovery.get_setting('scan_interval'):
@@ -237,6 +280,11 @@ def do_discovery(force: bool = False):
 
 @celery.task(bind=True, soft_time_limit=600)
 def nmap_scan(self, target: Dict[str, str]) -> None:
+    """
+    Nmap scan task. Handles one Nmap process to scan the provided host(s) or range(s).
+    Updates the host database when finished; may push status updates if invoked from web context.
+    :param target: Target hosts or ranges in a format suitable for Nmap.
+    """
     options = Discovery.get_setting('scan_options')
     ports = Discovery.get_setting('ports')
     if ports:

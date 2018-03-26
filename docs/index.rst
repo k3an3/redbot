@@ -17,7 +17,7 @@ Welcome to Redbot's documentation!
    :caption: Modules:
 
    modules/__init__
-
+   modules/discovery
 
 
 Indices and tables
