@@ -8,7 +8,7 @@ Hosts:
         hostname: {
                         'ports': {
                             portnum: {
-                                banner: "",
+                                'banner': '',
                             }
                         }
                         'target': target,
