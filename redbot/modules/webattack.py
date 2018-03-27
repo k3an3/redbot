@@ -1,13 +1,12 @@
-from typing import List, Tuple, Dict
-
 import requests
 from bs4 import BeautifulSoup
 from celery.result import GroupResult
 from faker import Faker
-from http_crawler import crawl
 from requests.utils import dict_from_cookiejar
+from typing import List, Tuple, Dict
 
 from redbot.core.async import celery
+from redbot.extern.httpcrawler import crawl
 from redbot.modules import Attack
 from redbot.modules.discovery import get_hosts
 
@@ -73,6 +72,7 @@ def fill_submit_forms(resp_text: str, resp_url: str, resp_cookies: Dict):
         # Fields that may be requested repeatedly
         email = ""
         passwd = ""
+        inp = {}
         for inp in form.find_all('input'):
             if inp.get('name'):
                 name = inp['name']
@@ -108,12 +108,14 @@ def fill_submit_forms(resp_text: str, resp_url: str, resp_cookies: Dict):
 
 @celery.task
 def crawl_site(host: str, port: int):
-    results = crawl(get_proper_url(host, port), follow_external_links=False)
+    results = list(crawl(get_proper_url(host, port),
+                         follow_external_links=False,
+                         verify_ssl=False))
     submit = HTTPAttacks.get_setting('submit_forms') in [True, 'True']
-    # Iterate anyway because results is a generator
-    for r in results:
-        if submit and r.status_code == 200:
-            fill_submit_forms.delay(r.text, r.url, dict_from_cookiejar(r.cookies))
+    if submit:
+        for r in results:
+            if r.status_code == 200:
+                fill_submit_forms.delay(r.text, r.url, dict_from_cookiejar(r.cookies))
     cls.log("Finished crawling {}:{}".format(host, port))
 
 

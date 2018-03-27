@@ -1,3 +1,5 @@
+lxml
+tinycss2
 beautifulsoup4
 PyYAML
 pip
@@ -8,7 +10,6 @@ faker
 Flask
 Flask-Login
 flask-socketio
-http_crawler
 ldap3
 paramiko
 passlib

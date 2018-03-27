@@ -11,3 +11,4 @@ files/
 build/
 dist/
 redbot.egg-info/
+celerybeat-schedule*

