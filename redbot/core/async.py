@@ -1,7 +1,4 @@
 """
-async.py
-~~~~~~~~
-
 Manages the setup for task handling.
 """
 import os
@@ -10,7 +7,7 @@ from celery import Celery
 
 from redbot.core.models import modules
 from redbot.core.utils import get_core_setting, get_random_attack, safe_load_config
-from redbot.settings import REDIS_HOST
+from redbot.settings import REDIS_HOST, BEAT_INTERVAL
 
 if not modules:
     safe_load_config()
@@ -37,11 +34,12 @@ def set_up_periodic_tasks(sender: Celery, **kwargs) -> None:
     """
     Configured scheduled tasks. Both discovery and attack jobs run every 10 seconds, but further code may choose
     whether or not to execute something at this point. This method shouldn't be called except by Celery itself.
+
     :param sender: Celery instance
     :param kwargs: Optional values
     """
     if not modules:
         safe_load_config()
-    sender.add_periodic_task(10, run_jobs.s(), name='Launch attacks')
+    sender.add_periodic_task(BEAT_INTERVAL, run_jobs.s(), name='Launch attacks')
     from redbot.modules.discovery import do_discovery
-    sender.add_periodic_task(10, do_discovery.s(), queue='discovery', name='Launch discovery')
+    sender.add_periodic_task(BEAT_INTERVAL, do_discovery.s(), queue='discovery', name='Launch discovery')

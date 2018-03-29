@@ -9,6 +9,7 @@ from redbot.core.models import targets, modules, storage
 def parse(filename: str) -> None:
     """
     Given a filename for a YAML config file, load the values into memory and the IPC store.
+
     :param filename: Filename for the YAML file.
     """
     with open(filename) as f:
@@ -34,6 +35,7 @@ def parse(filename: str) -> None:
 def get_modules(filename: str) -> List[str]:
     """
     Given a filename for a YAML config file, load module names.
+
     :param filename: Filename for the YAML file.
     :return: A list of the module names read from the file.
     """

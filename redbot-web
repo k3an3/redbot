@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from redbot.core.utils import get_core_settings
-from redbot.settings import HOST
+from redbot.settings import BIND_ADDR
 
 try:
     import eventlet
@@ -48,4 +48,4 @@ handler.setFormatter(logging.Formatter("%(asctime)s: %(message)s"))
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.INFO)
 get_core_settings()
-socketio.run(app, host=HOST, debug=settings.DEBUG)
+socketio.run(app, host=BIND_ADDR, debug=settings.DEBUG)

@@ -4,20 +4,20 @@ Data structure definitions:
 Hosts:
     Format for storing hosts, hostname or IP address as key.
 
-    {
-        'hostname1': {
-                        'ports': {
-                            portnum: {
-                                'banner': '',
-                            }
-                        }
-                        'target': target,
-                        'notes': '',
-                    },
-        'hostname2': {
-                        ...
-                    },
-        ...
+    { \
+        'hostname1': { \
+                        'ports': { \
+                            portnum: { \
+                                'banner': '', \
+                            } \
+                        } \
+                        'target': target, \
+                        'notes': '', \
+                    }, \
+        'hostname2': { \
+                        ... \
+                    }, \
+        ... \
     }
 
 

@@ -10,14 +10,17 @@ Welcome to Redbot's documentation!
     :maxdepth: 2
     :caption: Core:
 
+    core/async
+    core/configparser
     core/utils
+    core/vm
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Modules:
+    :maxdepth: 2
+    :caption: Modules:
 
-   modules/__init__
-   modules/discovery
+    modules/__init__
+    modules/discovery
 
 
 Indices and tables

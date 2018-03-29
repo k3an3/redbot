@@ -1,3 +1,6 @@
+"""
+General-purpose utilities useful across the application.
+"""
 import importlib
 import json
 import os
